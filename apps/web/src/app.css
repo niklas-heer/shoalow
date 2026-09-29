@@ -60,6 +60,16 @@ input {
   color: inherit;
 }
 
+/* Native form controls and side panels should share the table's readable foreground. */
+button,
+aside,
+h1,
+h2,
+h3,
+main {
+  color: var(--foam);
+}
+
 .btn {
   display: inline-flex;
   align-items: center;

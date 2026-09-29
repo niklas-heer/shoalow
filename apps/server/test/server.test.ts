@@ -260,3 +260,49 @@ test("bad requests are refused with clear errors", async () => {
   expect(anna.errors).toEqual(["malformed message", "add at least one more player or bot"]);
   expect((await fetch(new URL("/healthz", app.url))).status).toBe(200);
 });
+
+test("a chosen goal is validated at creation and persists", async () => {
+  const dir = tempDir();
+  let app = start(dir);
+  for (const targetScore of [0, 501, 50.5, "50", null]) {
+    expect((await post(app, "/api/rooms", { name: "Anna", targetScore })).status).toBe(400);
+  }
+  const created = await post(app, "/api/rooms", { name: "Anna", targetScore: 50 });
+  expect(created.status).toBe(200);
+  const code = created.body.code as string;
+  const token = created.body.token as string;
+  app.stop();
+  app = start(dir);
+  const anna = await Client.connect(app, code, token);
+  expect((await anna.until(() => true)).settings.targetScore).toBe(50);
+});
+
+test("exit and stop are broadcast, persisted and invalidate old seat tokens", async () => {
+  const dir = tempDir();
+  let app = start(dir);
+  const { code, token } = await createRoom(app);
+  const joined = await post(app, `/api/rooms/${code}/join`, { name: "Ben" });
+  const benToken = joined.body.token as string;
+  const anna = await Client.connect(app, code, token);
+  const ben = await Client.connect(app, code, benToken);
+  await anna.until((r) => r.seats.length === 2);
+  anna.send({ t: "start" });
+  await ben.until((r) => r.status === "playing");
+  anna.send({ t: "leave" });
+  const transferred = await ben.until((r) => r.host === 1 && r.seats[0]?.kind === "bot");
+  expect(transferred.game?.boards).toHaveLength(2);
+  await Bun.sleep(20);
+  expect(anna.removed).toBe(true);
+  const oldSeat = await fetch(new URL(`/api/rooms/${code}?token=${token}`, app.url));
+  expect(await oldSeat.json()).toMatchObject({ seated: false });
+  ben.send({ t: "stopGame" });
+  await ben.until((r) => r.status === "lobby" && r.game === null);
+  app.stop();
+  app = start(dir);
+  const back = await Client.connect(app, code, benToken);
+  const restored = await back.until(() => true);
+  expect(restored.status).toBe("lobby");
+  expect(restored.host).toBe(restored.you);
+  expect(restored.game).toBeNull();
+  expect((await post(app, `/api/rooms/${code}/join`, { name: "Anna" })).status).toBe(200);
+});

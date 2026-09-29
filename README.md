@@ -17,6 +17,14 @@ players can learn with a practice game against a bot, with a coach explaining ea
 the browser, so a refresh or a locked phone puts you straight back into the game. If someone has to
 leave, the host can let a bot play their cards until they come back.
 
+Choose a score goal with the slider when creating a table or in the lobby: 50 for a quick game,
+100 for a classic game, or any goal from 10 to 500. Setup shows an approximate duration based on
+the goal and player count; actual play can be faster or slower. In the **Game menu**, the host can
+stop a game and return everyone to the lobby with scores cleared. Anyone can exit during play:
+a bot takes over their cards, and hosting passes to the next human if the host exits. Exiting
+gives up that seat; the player can join again when the table returns to the lobby. Closing or
+refreshing the browser still keeps the seat for reconnecting.
+
 The in-game rules page explains everything; the short version:
 
 - On your turn, take the top discard or draw from the pile, then swap the card into your grid. A

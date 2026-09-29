@@ -4,6 +4,7 @@
   import { Connection } from "../lib/connection.svelte.ts";
   import { router } from "../lib/router.svelte.ts";
   import { forgetSeat, savedName, saveName, saveSeat, seatToken } from "../lib/session.ts";
+  import GameMenu from "./GameMenu.svelte";
   import Lobby from "./Lobby.svelte";
   import Logo from "./Logo.svelte";
   import Table from "./Table.svelte";
@@ -16,6 +17,8 @@
   let name = $state(savedName());
   let error = $state<string | null>(null);
   let busy = $state(false);
+  let menuOpen = $state(false);
+  let leaving = $state(false);
 
   // svelte-ignore state_referenced_locally
   const token = seatToken(code);
@@ -36,7 +39,11 @@
   onDestroy(() => conn?.close());
 
   $effect(() => {
-    if (conn?.removed) forgetSeat(code);
+    if (conn?.removed) {
+      forgetSeat(code);
+      if (leaving) router.go("/");
+    }
+    if (conn?.room?.status === "lobby") menuOpen = false;
   });
 
   async function join(event: SubmitEvent) {
@@ -72,7 +79,18 @@
   {#if conn.room.status === "lobby"}
     <Lobby room={conn.room} {conn} {onrules} />
   {:else}
-    <Table room={conn.room} {conn} {onrules} />
+    <Table room={conn.room} {conn} {onrules}>
+      {#snippet exit()}
+        <button class="btn quiet small" onclick={() => (menuOpen = true)}>Game menu</button>
+      {/snippet}
+    </Table>
+    {#if menuOpen}
+      <GameMenu room={conn.room} {conn} onclose={() => (menuOpen = false)} onleave={() => {
+        if (conn?.status !== "open") return;
+        leaving = true;
+        conn.send({ t: "leave" });
+      }} />
+    {/if}
   {/if}
 {:else if conn}
   <main class="notice"><Logo /><p>Connecting to table {code}…</p></main>

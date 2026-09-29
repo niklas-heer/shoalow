@@ -81,3 +81,90 @@ test("the practice game coaches a new player through the opening", async ({ page
   await expect(page.locator(".coach .title")).toHaveText(/Take the 0|Kelp's turn/, { timeout: 10_000 });
   expect(errors).toEqual([]);
 });
+
+test("choose a goal, stop the game, restart and exit with a bot taking over", async ({ browser }) => {
+  const host = await (await browser.newContext()).newPage();
+  const guest = await (await browser.newContext()).newPage();
+  await host.goto("/");
+  await host.getByLabel("Your name").fill("Anna");
+  await host.getByRole("button", { name: "Quick 50" }).click();
+  await expect(host.getByLabel("Game goal")).toHaveValue("50");
+  await expect(host.locator(".estimate")).toContainText("minutes");
+  await host.getByRole("button", { name: "Create a table" }).click();
+  await expect(host.getByLabel("Game goal")).toHaveValue("50");
+  const code = (await host.locator("p.code").textContent())?.trim() ?? "";
+  await guest.goto(`/r/${code}`);
+  await guest.getByLabel("Your name").fill("Ben");
+  await guest.getByRole("button", { name: "Take a seat" }).click();
+  await expect(guest.getByLabel("Game goal")).toBeDisabled();
+  await host.getByRole("button", { name: "Start with 2 players" }).click();
+  await expect(guest.locator(".prompt")).toHaveText("Reveal two of your cards");
+  await host.getByRole("button", { name: "Game menu" }).click();
+  await host.getByRole("button", { name: "Stop game…" }).click();
+  await host.getByRole("button", { name: "Keep playing" }).click();
+  await expect(host.getByRole("button", { name: "Stop game…" })).toBeVisible();
+  await host.getByRole("button", { name: "Stop game…" }).click();
+  await host.getByRole("button", { name: "Stop and return to lobby" }).click();
+  for (const page of [host, guest]) await expect(page.getByLabel("Game goal")).toHaveValue("50");
+  await host.getByRole("button", { name: "Classic 100" }).click();
+  await host.getByRole("button", { name: "Start with 2 players" }).click();
+  await expect(host.locator(".prompt")).toHaveText("Reveal two of your cards");
+  await host.getByRole("button", { name: "Game menu" }).click();
+  await host.getByRole("button", { name: "Exit game", exact: true }).click();
+  await expect(host.getByRole("button", { name: "Create a table" })).toBeVisible();
+  await guest.getByRole("button", { name: "Game menu" }).click();
+  await expect(guest.getByRole("button", { name: "Stop game…" })).toBeVisible();
+  await guest.getByRole("button", { name: "Close", exact: true }).click();
+  await guest.reload();
+  await expect(guest.locator(".prompt")).toHaveText("Reveal two of your cards");
+  await guest.getByRole("button", { name: "Game menu" }).click();
+  await guest.getByRole("button", { name: "Exit game", exact: true }).click();
+  await expect(guest.getByRole("button", { name: "Create a table" })).toBeVisible();
+  const gone = await guest.request.get(`/api/rooms/${code}`);
+  expect(gone.status()).toBe(404);
+});
+
+for (const width of [1440, 390]) {
+  test(`cards and piles keep their geometry through reveals and draws at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/learn");
+    await page.evaluate(() => document.fonts.ready);
+    await page.getByRole("button", { name: "Start the practice game" }).click();
+    const board = page.locator("section.mine .board");
+    const firstCard = board.locator(".card").first();
+    const deck = page.locator('[data-anchor="deck"] .card');
+    const geometry = () =>
+      page.evaluate(() =>
+        ["section.mine .board", "section.mine .card", '[data-anchor="deck"] .card', '[data-anchor="hand"]'].map(
+          (selector) => {
+            const rect = document.querySelector(selector)?.getBoundingClientRect();
+            return rect
+              ? { x: rect.x + window.scrollX, y: rect.y + window.scrollY, width: rect.width, height: rect.height }
+              : null;
+          },
+        ),
+      );
+    const before = await geometry();
+    await firstCard.click();
+    await expect(page.locator(".prompt")).toHaveText("Reveal one more card");
+    await board.locator("button.card.selectable").first().click();
+    await expect(page.locator(".prompt")).toHaveText(/^Draw from the pile or take the \d+$/, { timeout: 10_000 });
+    const assertStable = async () => {
+      const after = await geometry();
+      for (const [index, rect] of after.entries()) {
+        expect(rect).not.toBeNull();
+        for (const key of ["x", "y", "width", "height"] as const)
+          expect(rect?.[key], `element ${index}, ${key}`).toBeCloseTo(before[index]?.[key] ?? 0, 0);
+      }
+    };
+    await assertStable();
+    await deck.click();
+    await expect(page.locator(".prompt")).toHaveText("Swap it into your grid, or drop it on the discard pile");
+    await assertStable();
+    await expect(page.locator(".board-hint")).toContainText("Tap a card below to swap");
+    await page.getByRole("button", { name: /Discard pile, drop your card here/ }).click();
+    await expect(page.locator(".prompt")).toHaveText("Reveal one of your face-down cards");
+    await assertStable();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+  });
+}

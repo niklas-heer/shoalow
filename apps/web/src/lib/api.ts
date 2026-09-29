@@ -16,8 +16,8 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-export const createRoom = (name: string) =>
-  call<CreateRoomResponse>("/api/rooms", { method: "POST", body: JSON.stringify({ name }) });
+export const createRoom = (name: string, targetScore = 100) =>
+  call<CreateRoomResponse>("/api/rooms", { method: "POST", body: JSON.stringify({ name, targetScore }) });
 
 export const joinRoom = (code: string, name: string) =>
   call<CreateRoomResponse>(`/api/rooms/${code}/join`, { method: "POST", body: JSON.stringify({ name }) });

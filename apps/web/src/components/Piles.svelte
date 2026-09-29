@@ -29,7 +29,7 @@
     <div class="stack" class:thin={game.drawCount < 3} data-anchor="deck">
       <Card faceUp={false} selectable={canDraw} label="Draw pile, {game.drawCount} cards" onclick={ondraw} />
     </div>
-    <figcaption>{canDraw ? "Draw" : `${game.drawCount} left`}</figcaption>
+    <figcaption><strong>{canDraw ? "Draw a card" : "Draw pile"}</strong><span>{game.drawCount} left · face down</span></figcaption>
   </figure>
 
   <figure class="pile">
@@ -46,16 +46,18 @@
       ></button>
     {/if}
     </div>
-    <figcaption>{canDrop ? "Drop here" : canTake ? "Take" : "Discard"}</figcaption>
+    <figcaption><strong>{canDrop ? "Discard here" : canTake ? "Take this card" : "Discard pile"}</strong><span>{canDrop ? "Then reveal a card" : "Face up"}</span></figcaption>
   </figure>
 
   <figure class="pile hand" aria-live="polite">
     <div class="spot" data-anchor="hand">
       {#if game.hand !== null}
         <div class="held"><Card value={game.hand} label="{holder} holding" /></div>
+      {:else}
+        <div class="hand-empty" aria-hidden="true"><span>Drawn<br />card</span></div>
       {/if}
     </div>
-    <figcaption>{#if game.hand !== null}{holder === "You" ? "You hold" : `${holder} holds`}{/if}</figcaption>
+    <figcaption><strong>{game.hand !== null ? holder === "You" ? "Your drawn card" : `${holder} holds` : "Your next card"}</strong><span>{game.hand !== null ? "Choose where it goes" : "Draw or take to begin"}</span></figcaption>
   </figure>
 </div>
 
@@ -68,15 +70,21 @@
   }
   .pile {
     display: grid;
+    grid-template-rows: auto 3.2rem;
     gap: 0.35rem;
     margin: 0;
     text-align: center;
   }
   figcaption {
     color: var(--mist);
-    font-size: 0.9rem;
+    display: grid;
+    align-content: start;
+    gap: 0.15rem;
+    font-size: 0.78rem;
     font-weight: 600;
   }
+  figcaption strong { color: var(--foam); font-weight: 700; }
+  figcaption span { font-size: 0.67rem; }
   .stack {
     position: relative;
     filter: drop-shadow(3px 3px 0 #0c3448) drop-shadow(3px 3px 0 #0a2d3e);
@@ -97,10 +105,14 @@
     cursor: pointer;
   }
   .spot {
+    position: relative;
     aspect-ratio: 5 / 7;
+    width: 100%;
   }
+  .hand-empty { position: absolute; inset: 0; display: grid; place-items: center; border: 1px dashed rgb(127 216 200 / 0.22); border-radius: 9%/6.5%; color: var(--mist); font-size: 0.78rem; }
   .held {
-    transform: rotate(4deg);
+    position: absolute;
+    inset: 0;
     filter: drop-shadow(0 10px 14px rgb(0 0 0 / 0.4));
   }
 </style>

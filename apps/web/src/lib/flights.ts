@@ -8,7 +8,7 @@ import { motion } from "./motion.ts";
  * from where the card came from.
  */
 
-const DURATION = 420;
+const DURATION = 300;
 const hidden = new Map<Element, number>();
 
 const anchor = (name: string): HTMLElement | null => document.querySelector(`[data-anchor="${name}"]`);
@@ -55,17 +55,11 @@ function fly(fromName: string, toName: string, opts: { delay?: number; flipIn?: 
 
   const dx = a.left - b.left;
   const dy = a.top - b.top;
-  const s = a.width / b.width;
-  const lift = Math.min(60, Math.hypot(dx, dy) * 0.18);
+  // Keep the destination card's size throughout the move: no zoom or overshoot.
   const animation = ghost.animate(
     [
-      { transform: `translate(${dx}px, ${dy}px) scale(${s})`, filter: "drop-shadow(0 4px 6px rgb(0 0 0 / 0.3))" },
-      {
-        transform: `translate(${dx / 2}px, ${dy / 2 - lift}px) scale(${(s + 1) / 2 + 0.08}) rotate(-3deg)`,
-        filter: "drop-shadow(0 18px 18px rgb(0 0 0 / 0.35))",
-        offset: 0.5,
-      },
-      { transform: "none", filter: "drop-shadow(0 2px 3px rgb(0 0 0 / 0.3))" },
+      { transform: `translate(${dx}px, ${dy}px)`, opacity: 0.85 },
+      { transform: "none", opacity: 1 },
     ],
     { duration: DURATION, delay: opts.delay ?? 0, easing: "cubic-bezier(0.3, 0.6, 0.25, 1)", fill: "backwards" },
   );

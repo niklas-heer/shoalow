@@ -56,9 +56,23 @@ export class Room {
   ) {}
 
   /** Creates a room after validating the host's display name. */
-  static createChecked(code: string, rawName: unknown): { room: Room; token: string } | { error: string } {
+  static createChecked(
+    code: string,
+    rawName: unknown,
+    targetScore: unknown = DEFAULT_TARGET_SCORE,
+  ): { room: Room; token: string } | { error: string } {
     const name = cleanName(rawName);
-    return name ? Room.create(code, name) : { error: "pick a name of 1 to 20 characters" };
+    if (!name) return { error: "pick a name of 1 to 20 characters" };
+    if (
+      typeof targetScore !== "number" ||
+      !Number.isInteger(targetScore) ||
+      targetScore < MIN_TARGET_SCORE ||
+      targetScore > MAX_TARGET_SCORE
+    )
+      return { error: `the target must be a whole number between ${MIN_TARGET_SCORE} and ${MAX_TARGET_SCORE}` };
+    const created = Room.create(code, name);
+    created.room.snap.settings.targetScore = targetScore;
+    return created;
   }
 
   static create(code: string, hostName: string): { room: Room; token: string } {
@@ -148,10 +162,22 @@ export class Room {
         return { ok: true, events: [], removedTokens: [removed.token] };
       }
       case "leave": {
-        if (s.status !== "lobby")
-          return fail("you can only leave in the lobby; ask the host to hand your seat to a bot");
         const removed = s.seats[seat];
         if (!removed) return fail("no such seat");
+        if (s.status === "playing") {
+          const token = removed.token;
+          // Preserve board indices and turn order; revoke every connection to the old seat.
+          removed.kind = "bot";
+          removed.level = "normal";
+          removed.takenOver = false;
+          removed.token = newToken();
+          if (isHost)
+            s.host = Math.max(
+              0,
+              s.seats.findIndex((x) => x.kind === "human"),
+            );
+          return { ok: true, events: [], removedTokens: [token] };
+        }
         s.seats.splice(seat, 1);
         if (seat < s.host) s.host -= 1;
         else if (seat === s.host)
@@ -180,6 +206,14 @@ export class Room {
         if (s.status !== "lobby") return fail("the game has already started");
         if (s.seats.length < MIN_PLAYERS) return fail("add at least one more player or bot");
         return done(this.startGame());
+      }
+      case "stopGame": {
+        if (!isHost) return fail("only the host can stop the game");
+        if (s.status === "lobby") return done();
+        s.status = "lobby";
+        s.game = null;
+        for (const player of s.seats) player.takenOver = false;
+        return done();
       }
       case "playAgain": {
         if (!s.game) return fail("no game in progress");

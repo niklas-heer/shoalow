@@ -36,6 +36,7 @@
     <path class="ds thin" d="M50 84 L50 62 M34 80 L40 62 M66 80 L60 62 M20 70 L30 61 M80 70 L70 61" />
     <circle class="pearl ds" cx="50" cy="56" r="13" />
     <circle class="w" cx="45" cy="51" r="3.5" />
+    <path class="ds thin" d="M42 66 Q50 70 58 66" opacity="0.25" />
   {:else if value === -1}
     <!-- conch -->
     <path class="w ds" d="M18 74 C 16 52 38 34 60 30 L 86 14 L 78 40 C 80 62 62 82 40 86 C 30 87 20 82 18 74 Z" />
@@ -87,6 +88,7 @@
     <!-- jellyfish -->
     <path class="ws tentacle" d="M30 56 q -5 10 0 18 q 5 8 0 16 M44 58 q 5 12 0 24 M56 58 q -5 12 0 24 M70 56 q 5 10 0 18 q -5 8 0 16" />
     <path class="w" d="M16 56 C 16 18 84 18 84 56 Q 76 62 67 56 Q 58 62 50 56 Q 42 62 33 56 Q 24 62 16 56 Z" />
+    <path class="hole" d="M26 40 Q50 17 74 40 Q50 30 26 40" opacity="0.5" />
     <circle class="d" cx="40" cy="42" r="3" />
     <circle class="d" cx="60" cy="42" r="3" />
     <path class="ds" d="M45 49 Q50 53 55 49" />
@@ -94,9 +96,12 @@
     <!-- octopus -->
     <path class="ws arm" d="M34 58 C 24 70 12 68 14 80 M44 62 C 42 76 30 82 34 92 M56 62 C 58 76 70 82 66 92 M66 58 C 76 70 88 68 86 80" />
     <path class="w" d="M26 48 C 26 16 74 16 74 48 C 74 58 66 64 58 64 L 42 64 C 34 64 26 58 26 48 Z" />
+    <path class="hole" d="M31 44 C31 30 37 24 44 23 C34 37 40 52 33 54Z" opacity="0.4" />
     <circle class="d" cx="41" cy="44" r="3.4" />
     <circle class="d" cx="59" cy="44" r="3.4" />
     <path class="ds" d="M46 53 Q50 56 54 53" />
+    <ellipse class="hole" cx="34" cy="50" rx="4" ry="2" opacity="0.55" />
+    <ellipse class="hole" cx="66" cy="50" rx="4" ry="2" opacity="0.55" />
     <circle class="hole" cx="40" cy="28" r="2.5" />
     <circle class="hole" cx="54" cy="24" r="2" />
   {:else if value === 6}
@@ -184,7 +189,11 @@
     --line: var(--card-ink, #10202a);
   }
   .w {
-    fill: var(--creature, #fffdf7);
+    fill: var(--creature, #fff5dd);
+    stroke: var(--line);
+    stroke-width: 1.1;
+    stroke-opacity: 0.35;
+    paint-order: stroke fill;
   }
   .d {
     fill: var(--line);
@@ -209,7 +218,7 @@
   }
   .ws {
     fill: none;
-    stroke: var(--creature, #fffdf7);
+    stroke: var(--creature, #fff5dd);
     stroke-width: 3;
     stroke-linecap: round;
     stroke-linejoin: round;
@@ -219,7 +228,7 @@
   }
   .body {
     fill: none;
-    stroke: var(--creature, #fffdf7);
+    stroke: var(--creature, #fff5dd);
     stroke-width: 15;
     stroke-linecap: round;
   }
@@ -255,7 +264,7 @@
     stroke-width: 3.4;
   }
   .round {
-    stroke: var(--creature, #fffdf7);
+    stroke: var(--creature, #fff5dd);
     stroke-width: 6;
     stroke-linejoin: round;
   }

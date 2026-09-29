@@ -87,6 +87,8 @@
 <style>
   .coach {
     display: grid;
+    align-content: start;
+    min-height: 12rem;
     gap: 0.3rem;
     width: min(34rem, 100%);
     padding: 0.8rem 1rem;

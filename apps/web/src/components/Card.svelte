@@ -1,7 +1,5 @@
 <script lang="ts">
-  import { scale } from "svelte/transition";
   import { BAND_COLORS, band, CREATURES, formatValue } from "../lib/cards.ts";
-  import { motion } from "../lib/motion.ts";
   import CardBack from "./CardBack.svelte";
   import Creature from "./Creature.svelte";
 
@@ -11,6 +9,7 @@
     size = "lg",
     selectable = false,
     label = "",
+    action = "",
     onclick,
   }: {
     value?: number | null;
@@ -18,7 +17,8 @@
     size?: "lg" | "sm";
     selectable?: boolean;
     label?: string;
-    onclick?: () => void;
+    action?: string;
+    onclick?: (() => void) | undefined;
   } = $props();
 
   const up = $derived(faceUp && value !== null);
@@ -29,23 +29,27 @@
 </script>
 
 <svelte:element
-  this={selectable ? "button" : "div"}
+  this={onclick ? "button" : "div"}
   class="card {size}"
   class:down={!up}
   class:selectable
-  role={selectable ? undefined : "img"}
-  aria-label={label ? `${label}: ${description}` : description}
+  style:--card-fill={colors?.fill}
+  style:--card-ink={colors?.ink}
+  role={onclick ? undefined : "img"}
+  aria-label={`${action ? `${action}. ` : ""}${label ? `${label}: ` : ""}${description}`}
   onclick={selectable ? onclick : undefined}
-  type={selectable ? "button" : undefined}
+  type={onclick ? "button" : undefined}
+  disabled={onclick ? !selectable : undefined}
 >
   <div class="flipper">
     <div class="face front">
       {#if up && value !== null && colors}
-        {#key value}
-          <svg viewBox="0 0 100 140" in:scale={{ start: 0.82, duration: motion(260) }}>
+          <svg viewBox="0 0 100 140" aria-hidden="true">
             {#if size === "lg"}
               <!-- No clip paths or ids here: flying cards are DOM copies, and copied ids would clash. -->
               <rect width="100" height="140" rx="11" fill={colors.fill} />
+              <path d="M11 2 H89 A9 9 0 0 1 98 11 V54 Q45 35 2 65 V11 A9 9 0 0 1 11 2Z" fill="#fffdf7" opacity="0.14" />
+              <ellipse cx="50" cy="73" rx="37" ry="38" fill="#fffdf7" opacity="0.16" />
               <!-- a low swell of water along the bottom edge -->
               <path
                 d="M0 120 C 18 112 32 128 52 120 S 86 110 100 118 V129 A11 11 0 0 1 89 140 H11 A11 11 0 0 1 0 129 Z"
@@ -61,14 +65,14 @@
                 <rect x="10" y="32" width="13" height="2.6" rx="1.3" fill={colors.ink} />
                 <rect x="77" y="133" width="13" height="2.6" rx="1.3" fill={colors.ink} />
               {/if}
-              <g transform="translate(0 22)"><Creature {value} /></g>
+              <g transform="translate(6 30) scale(0.88)"><Creature {value} /></g>
+              <text class="species" x="50" y="120" fill={colors.ink}>{CREATURES[value]}</text>
             {:else}
               <rect width="100" height="140" rx="12" fill={colors.fill} />
               <text class="big" x="50" y="74" fill={colors.ink}>{formatValue(value)}</text>
               {#if marked}<rect x="36" y="106" width="28" height="6" rx="3" fill={colors.ink} />{/if}
             {/if}
           </svg>
-        {/key}
       {/if}
     </div>
     <div class="face back"><CardBack {size} /></div>
@@ -81,6 +85,8 @@
     display: block;
     aspect-ratio: 5 / 7;
     width: 100%;
+    min-width: 0;
+    flex: none;
     padding: 0;
     border: 0;
     background: none;
@@ -88,12 +94,14 @@
     border-radius: 9%/6.5%;
     color: inherit;
     font: inherit;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
   .flipper {
     position: absolute;
     inset: 0;
     transform-style: preserve-3d;
-    transition: transform var(--flip-ms, 420ms) cubic-bezier(0.3, 0.7, 0.3, 1);
+    transition: transform var(--flip-ms, 320ms) cubic-bezier(0.3, 0.7, 0.3, 1);
   }
   .down .flipper {
     transform: rotateY(180deg);
@@ -123,6 +131,7 @@
   .end {
     text-anchor: end;
   }
+  .species { font-size: 6.3px; font-weight: 750; letter-spacing: 0.09em; text-anchor: middle; text-transform: uppercase; }
   .big {
     font-size: 64px;
     font-weight: 800;
@@ -135,24 +144,15 @@
     border-radius: 9%/6.5%;
     box-shadow:
       0 0 0 2px var(--lantern),
-      0 0 18px 2px rgb(255 226 122 / 0.45);
-    animation: lure 1.8s ease-in-out infinite;
-    transition: transform 140ms;
+      0 0 12px rgb(255 226 122 / 0.18);
+    transition: box-shadow 140ms;
   }
   .selectable:hover,
   .selectable:focus-visible {
-    transform: translateY(-4px);
     outline: none;
     box-shadow:
       0 0 0 3px var(--lantern),
-      0 0 26px 6px rgb(255 226 122 / 0.6);
-  }
-  @keyframes lure {
-    50% {
-      box-shadow:
-        0 0 0 2px var(--lantern),
-        0 0 8px 0 rgb(255 226 122 / 0.25);
-    }
+      0 0 16px 2px rgb(255 226 122 / 0.3);
   }
   @media (prefers-reduced-motion: reduce) {
     .flipper {

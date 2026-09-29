@@ -42,17 +42,56 @@ test("removing a seat before the host keeps the host index right", () => {
   expect(room.snap.seats.map((s) => s.name)).toEqual(["Ben"]);
 });
 
-test("only the lobby allows seat and setting changes", () => {
+test("only the lobby allows adding seats and changing the goal", () => {
   const { room } = lobby();
   expect(room.handle(0, { t: "setTarget", score: 5 }).ok).toBe(false);
   expect(room.handle(0, { t: "setTarget", score: 150 }).ok).toBe(true);
   expect(room.handle(0, { t: "start" }).ok).toBe(true);
   expect(room.snap.game?.settings.targetScore).toBe(150);
   expect(room.handle(0, { t: "addBot", level: "easy" }).ok).toBe(false);
-  expect(room.handle(1, { t: "leave" }).ok).toBe(false);
   expect(room.handle(0, { t: "setTarget", score: 50 }).ok).toBe(false);
   expect(room.handle(1, { t: "playAgain" })).toEqual({ ok: true, events: [] });
   expect(room.snap.gameNumber).toBe(1);
+});
+
+test("stopping is host-only and returns the same seats and settings to the lobby", () => {
+  const { room, anna, ben } = lobby();
+  room.handle(0, { t: "setTarget", score: 50 });
+  room.handle(0, { t: "start" });
+  room.handle(0, { t: "takeover", seat: 1, bot: true });
+  expect(room.handle(1, { t: "stopGame" }).ok).toBe(false);
+  expect(room.snap.status).toBe("playing");
+  expect(room.handle(0, { t: "stopGame" }).ok).toBe(true);
+  expect(room.snap.game).toBeNull();
+  expect(room.snap.status).toBe("lobby");
+  expect(room.pendingBot()).toBeNull();
+  expect(room.seatOf(anna)).toBe(0);
+  expect(room.seatOf(ben)).toBe(1);
+  expect(room.snap.seats[1]?.takenOver).toBe(false);
+  expect(room.snap.settings.targetScore).toBe(50);
+  expect(room.handle(1, { t: "action", action: { type: "flip", index: 0 } }).ok).toBe(false);
+  room.handle(0, { t: "setTarget", score: 100 });
+  room.handle(0, { t: "start" });
+  expect(room.snap.game?.settings.targetScore).toBe(100);
+  expect(room.snap.game?.totals).toEqual([0, 0, 0]);
+});
+
+test("exiting preserves the grid, revokes the seat and transfers hosting to a human", () => {
+  const { room, anna, ben, cleo } = lobby();
+  room.handle(0, { t: "start" });
+  room.handle(0, { t: "action", action: { type: "flip", index: 0 } });
+  const before = structuredClone(room.snap.game);
+  expect(room.handle(0, { t: "leave" })).toEqual({ ok: true, events: [], removedTokens: [anna] });
+  expect(room.snap.game).toEqual(before);
+  expect(room.snap.seats).toHaveLength(3);
+  expect(room.snap.seats[0]?.kind).toBe("bot");
+  expect(room.pendingBot()).toBe(0);
+  expect(room.seatOf(anna)).toBe(-1);
+  expect(room.snap.host).toBe(room.seatOf(ben));
+  room.handle(1, { t: "leave" });
+  expect(room.snap.host).toBe(room.seatOf(cleo));
+  room.handle(2, { t: "stopGame" });
+  expect(room.join("Anna")).toHaveProperty("token");
 });
 
 test("the host can change the bot speed at any time, and old snapshots default to normal", () => {

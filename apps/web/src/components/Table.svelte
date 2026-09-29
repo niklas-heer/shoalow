@@ -61,7 +61,6 @@
 
   // Fit every opponent on one row where possible, otherwise two or three, never below a readable size.
   let stripWidth = $state(0);
-  let stripHeight = $state(0);
   const TILE_MIN = 76;
   const TILE_MAX = 150;
   const TILE_GAP = 8;
@@ -71,7 +70,7 @@
     for (let rows = 1; ; rows++) {
       const cols = Math.ceil(n / rows);
       const tile = (width - (cols - 1) * TILE_GAP) / cols;
-      if (tile >= TILE_MIN || cols === 1) return { cols, tile: Math.min(TILE_MAX, tile) };
+      if (tile >= TILE_MIN || cols === 1) return { cols, tile: Math.min(width < 600 ? 120 : TILE_MAX, tile) };
     }
   });
 
@@ -117,7 +116,7 @@
 </script>
 
 {#if game && myBoard}
-  <div class="table" class:my-turn={banner.yours} style:--strip-h="{stripHeight}px">
+  <div class="table" class:my-turn={banner.yours}>
     <header class="bar">
       <Logo size={22} />
       <span class="meta">{room.code}, round {game.round}</span>
@@ -151,7 +150,6 @@
       class:compact={strip.tile < 110}
       aria-label="Other players"
       bind:clientWidth={stripWidth}
-      bind:clientHeight={stripHeight}
       style:--cols={strip.cols}
       style:--tile="{strip.tile}px"
       style:--tile-gap="{TILE_GAP}px"
@@ -178,11 +176,9 @@
               anchor="slot-{p}"
               bursting={clearedFor(p, events)}
             />
-            {#if seat.takenOver || (seat.kind === "human" && !seat.connected) || game.endedBy === p}
-              <span class="sub">
-                {#if seat.takenOver}bot is playing{:else if seat.kind === "human" && !seat.connected}away{:else}revealed all{/if}
-              </span>
-            {/if}
+            <span class="sub">
+              {#if seat.takenOver}bot is playing{:else if seat.kind === "human" && !seat.connected}away{:else if game.endedBy === p}revealed all{:else}{board.faceDown} hidden{/if}
+            </span>
           </button>
         {/if}
       {/each}
@@ -223,11 +219,18 @@
             <span class="stat"><strong>{formatValue(myBoard.visibleSum)}</strong> showing</span>
             <span class="stat"><strong>{formatValue(game.totals[me] ?? 0)}</strong> total</span>
           </div>
+          <p class="board-hint" class:active={banner.yours}>
+            {#if game.phase === "initialFlip" && myBoard.initialFlips < 2}{myBoard.initialFlips === 0 ? "Tap any two cards to reveal" : "Tap one more card to reveal"}
+            {:else if myTurn && game.stage === "mustFlip"}Tap a face-down card to reveal it
+            {:else if myTurn && (game.stage === "drawn" || game.stage === "fromDiscard")}Tap a card below to swap in your {game.hand}
+            {:else}Match three in a column to clear them{/if}
+          </p>
           <Board
             board={myBoard}
             owner="Your"
             anchor="slot-{me}"
             selectable={canPick}
+            action={game.phase === "initialFlip" || game.stage === "mustFlip" ? "Reveal this card" : `Swap with your ${game.hand}`}
             onpick={pick}
             bursting={clearedFor(me, events)}
           />
@@ -337,7 +340,6 @@
   .tile.current {
     border-color: var(--lantern);
     box-shadow: 0 0 20px rgb(255 226 122 / 0.3);
-    transform: translateY(2px);
   }
   .tile.away {
     opacity: 0.55;
@@ -379,14 +381,17 @@
   .banner {
     display: grid;
     gap: 0.15rem;
-    min-height: 3.4rem;
+    grid-template-rows: 4rem 2.8rem;
+    align-items: center;
+    width: min(100%, 55rem);
+    min-height: 7rem;
     text-align: center;
   }
   .banner p {
     margin: 0;
   }
   .prompt {
-    font-size: 1.25rem;
+    font-size: clamp(1.05rem, 2.3vw, 1.25rem);
     font-weight: 750;
     letter-spacing: -0.01em;
   }
@@ -398,6 +403,13 @@
   .final {
     color: var(--mist);
     font-size: 0.95rem;
+  }
+  .prompt, .move, .final {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
   }
   .final {
     color: #ffc9a8;
@@ -431,6 +443,8 @@
     align-items: baseline;
     gap: 1rem;
   }
+  .board-hint { margin: 0; min-height: 2.6rem; display: grid; align-items: center; color: var(--mist); font-size: 0.85rem; text-align: center; }
+  .board-hint.active { color: var(--lantern); }
   .mine-head .name {
     flex: 1;
     font-size: 1.2rem;
@@ -446,6 +460,7 @@
   }
 
   .side {
+    visibility: hidden;
     position: fixed;
     inset: 0 0 0 auto;
     z-index: 30;
@@ -461,6 +476,7 @@
     transition: transform 240ms ease;
   }
   .side.open {
+    visibility: visible;
     transform: none;
   }
   .close {
@@ -469,7 +485,7 @@
 
   @media (min-width: 1000px) {
     .table {
-      --board-w: clamp(15rem, calc((100dvh - var(--strip-h) - 22rem) / 1.08), 27rem);
+      --board-w: clamp(15rem, calc((100svh - 29rem) / 1.08), 27rem);
       grid-template-columns: minmax(0, 1fr) 19rem;
       grid-template-areas:
         "bar bar"
@@ -479,6 +495,7 @@
       column-gap: 1.5rem;
     }
     .side {
+      visibility: visible;
       grid-area: side;
       position: sticky;
       top: 0.5rem;
@@ -500,15 +517,21 @@
     }
   }
 
+  @media (max-width: 600px) {
+    .bar { flex-wrap: wrap; gap: 0.25rem 0.75rem; }
+    .meta { min-width: 0; }
+    .actions { flex-basis: 100%; justify-content: flex-end; }
+  }
+
   @media (min-width: 1240px) {
     /* Everything above the grid: bar, opponents, banner, the grid's own header, and breathing room. */
     .table {
-      --board-w: clamp(15rem, calc((100dvh - var(--strip-h) - 13rem) / 1.08), 27rem);
+      --board-w: clamp(15rem, calc((100svh - 22rem) / 1.08), 27rem);
     }
     .field {
       grid-template-columns: minmax(0, 20rem) auto;
       justify-content: center;
-      align-items: center;
+      align-items: start;
       column-gap: 2.5rem;
     }
     .left {

@@ -3,6 +3,7 @@
   import { router } from "../lib/router.svelte.ts";
   import { savedName, saveName, saveSeat } from "../lib/session.ts";
   import Card from "./Card.svelte";
+  import GameGoal from "./GameGoal.svelte";
   import Logo from "./Logo.svelte";
 
   let { onrules }: { onrules: () => void } = $props();
@@ -11,6 +12,7 @@
   let code = $state("");
   let busy = $state(false);
   let error = $state<string | null>(null);
+  let targetScore = $state(100);
 
   async function create(event: SubmitEvent) {
     event.preventDefault();
@@ -21,7 +23,7 @@
     busy = true;
     error = null;
     try {
-      const room = await createRoom(name);
+      const room = await createRoom(name, targetScore);
       saveName(name.trim());
       saveSeat(room.code, room.token);
       router.go(`/r/${room.code}`);
@@ -56,11 +58,12 @@
     A card game for 2 to 10 players. Swap and reveal cards to keep your score low; pearls help, anglerfish hurt.
   </p>
 
-  <form class="panel" onsubmit={create}>
+  <form class="panel create" onsubmit={create}>
     <label class="field">
       Your name
       <input bind:value={name} maxlength="20" autocomplete="nickname" placeholder="e.g. Anna" />
     </label>
+    <GameGoal value={targetScore} onchange={(score) => (targetScore = score)} />
     <button class="btn primary" disabled={busy}>Create a table</button>
   </form>
 
@@ -113,12 +116,6 @@
   }
   .c3 {
     transform: translateX(-50%) rotate(16deg) translateX(2.2rem);
-    animation: sway 6s ease-in-out infinite;
-  }
-  @keyframes sway {
-    50% {
-      transform: translateX(-50%) rotate(19deg) translateX(2.4rem) translateY(-4px);
-    }
   }
   .pitch {
     max-width: 26rem;
@@ -140,6 +137,7 @@
     padding-top: 1.25rem;
     border-top: 1px solid rgb(168 201 214 / 0.2);
   }
+  .create { display: grid; gap: 1rem; padding: 1.25rem; border: 1px solid rgb(127 216 200 / 0.2); border-radius: 20px; background: rgb(6 25 40 / 0.35); }
   .code {
     text-transform: uppercase;
     letter-spacing: 0.2em;

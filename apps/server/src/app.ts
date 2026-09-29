@@ -42,12 +42,12 @@ function roomCode(): string {
 const json = (body: unknown, status = 200) => Response.json(body, { status });
 const error = (message: string, status: number) => json({ error: message }, status);
 
-async function readName(req: Request): Promise<unknown> {
+async function readBody(req: Request): Promise<{ name?: unknown; targetScore?: unknown }> {
   try {
-    const body = (await req.json()) as { name?: unknown };
-    return body?.name;
+    const body: unknown = await req.json();
+    return typeof body === "object" && body !== null && !Array.isArray(body) ? body : {};
   } catch {
-    return undefined;
+    return {};
   }
 }
 
@@ -152,6 +152,10 @@ export function createServer(options: ServerOptions) {
       return;
     }
     store.save(room.snap, { seat, message: msg });
+    if (msg.t === "stopGame") {
+      clearTimeout(botTimers.get(room.code));
+      botTimers.delete(room.code);
+    }
     broadcast(room, outcome.events);
     scheduleBots(room);
   }
@@ -195,10 +199,10 @@ export function createServer(options: ServerOptions) {
 
       if (path === "/api/rooms" && req.method === "POST") {
         if (rooms.size >= MAX_ROOMS) return error("too many open rooms, try again later", 503);
-        const name = await readName(req);
+        const body = await readBody(req);
         let code = roomCode();
         while (rooms.has(code)) code = roomCode();
-        const created = Room.createChecked(code, name);
+        const created = Room.createChecked(code, body.name, body.targetScore);
         if ("error" in created) return error(created.error, 400);
         rooms.set(code, created.room);
         store.save(created.room.snap);
@@ -216,7 +220,7 @@ export function createServer(options: ServerOptions) {
           return json({ code, status: room.snap.status, players: room.snap.seats.length, ...seated });
         }
         if (match[2] && req.method === "POST") {
-          const joined = room.join(await readName(req));
+          const joined = room.join((await readBody(req)).name);
           if ("error" in joined) return error(joined.error, 409);
           store.save(room.snap, { seat: room.seatOf(joined.token), message: { t: "join" } });
           broadcast(room);

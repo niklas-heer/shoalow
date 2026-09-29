@@ -41,6 +41,7 @@ export type ClientMessage =
   | { t: "setTarget"; score: number }
   | { t: "setBotSpeed"; speed: BotSpeed }
   | { t: "start" }
+  | { t: "stopGame" }
   | { t: "nextRound" }
   | { t: "playAgain" }
   | { t: "takeover"; seat: number; bot: boolean }
@@ -99,6 +100,7 @@ export function parseClientMessage(text: string): ClientMessage | null {
   switch (raw.t) {
     case "ping":
     case "start":
+    case "stopGame":
     case "nextRound":
     case "playAgain":
     case "leave":

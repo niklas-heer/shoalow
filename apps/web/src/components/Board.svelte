@@ -9,7 +9,8 @@
     size = "lg",
     owner,
     selectable = () => false,
-    onpick = () => {},
+    onpick,
+    action = "",
     bursting = [],
     anchor,
   }: {
@@ -18,6 +19,7 @@
     owner: string;
     selectable?: (index: number) => boolean;
     onpick?: (index: number) => void;
+    action?: string;
     /** Columns cleared by the latest move, for the bubble burst. */
     bursting?: number[];
     /** Prefix for the cells' flight anchors; only the live table sets it. */
@@ -46,8 +48,9 @@
             value={card.faceUp ? card.value : null}
             faceUp={card.faceUp}
             selectable={selectable(i)}
+            action={selectable(i) ? action : ""}
             label="{owner}, {position(i)}"
-            onclick={() => onpick(i)}
+            onclick={onpick ? () => onpick(i) : undefined}
           />
         </div>
       {:else}

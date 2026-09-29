@@ -4,7 +4,7 @@
   import { router } from "../lib/router.svelte.ts";
   import { forgetSeat } from "../lib/session.ts";
   import BotSpeed from "./BotSpeed.svelte";
-  import Choice from "./Choice.svelte";
+  import GameGoal from "./GameGoal.svelte";
   import Logo from "./Logo.svelte";
 
   let { room, conn, onrules }: { room: RoomView; conn: Connection; onrules: () => void } = $props();
@@ -14,20 +14,6 @@
   const hasBots = $derived(room.seats.some((s) => s.kind === "bot"));
   const link = $derived(`${location.origin}/r/${room.code}`);
   let copied = $state(false);
-
-  const PRESETS = [50, 100, 150, 200];
-  const targets = $derived(
-    [...new Set([...PRESETS, room.settings.targetScore])]
-      .sort((a, b) => a - b)
-      .map((value) => ({ value, label: String(value) })),
-  );
-  const length = $derived(
-    room.settings.targetScore <= 60
-      ? "A quick game, usually 2 to 4 rounds."
-      : room.settings.targetScore <= 120
-        ? "The usual length, often 5 to 8 rounds."
-        : "A long game with many rounds.",
-  );
 
   async function copy() {
     try {
@@ -109,14 +95,13 @@
     <h2>Game settings</h2>
     {#if !isHost}<p class="hint">Only the host can change these.</p>{/if}
     <div class="setting">
-      <Choice
-        legend="The game ends when someone reaches"
-        options={targets}
+      <GameGoal
         value={room.settings.targetScore}
+        humans={room.seats.filter((seat) => seat.kind === "human").length}
+        bots={room.seats.filter((seat) => seat.kind === "bot").length}
         disabled={!isHost}
         onchange={setTarget}
       />
-      <p class="hint">points. The lowest total wins. {length}</p>
     </div>
     {#if hasBots}
       <div class="setting"><BotSpeed {room} link={conn} /></div>
