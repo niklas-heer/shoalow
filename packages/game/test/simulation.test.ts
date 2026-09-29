@@ -15,6 +15,8 @@ import {
 
 const GAMES = Number(process.env.SIM_GAMES ?? 60);
 const BASE_SEED = Number(process.env.SIM_SEED ?? 20260929);
+/** First game index; together with the base seed this replays one failing game. */
+const FROM = Number(process.env.SIM_FROM ?? 0);
 const MAX_ACTIONS = 50_000;
 
 const DECK_COUNTS = countValues(fullDeck());
@@ -95,11 +97,19 @@ test(`${GAMES} seeded bot games keep every invariant and replay exactly`, () => 
   const started = performance.now();
   let rounds = 0;
   let actions = 0;
-  for (let g = 0; g < GAMES; g++) {
+  for (let g = FROM; g < FROM + GAMES; g++) {
     const seed = (BASE_SEED + g * 7919) | 0;
     const players = 2 + (g % 9);
     const levels: BotLevel[] = Array.from({ length: players }, (_, p) => ((g + p) % 3 === 0 ? "easy" : "normal"));
-    const { final, log } = playGame(seed, levels);
+    let played: Played;
+    try {
+      played = playGame(seed, levels);
+    } catch (e) {
+      throw new Error(
+        `${(e as Error).message}\nreproduce: SIM_SEED=${BASE_SEED} SIM_FROM=${g} SIM_GAMES=1 mise run sim`,
+      );
+    }
+    const { final, log } = played;
     expect(final.phase).toBe("gameOver");
     expect(final.totals.some((t) => t >= 100)).toBe(true);
     expect(final.winners.length).toBeGreaterThan(0);
