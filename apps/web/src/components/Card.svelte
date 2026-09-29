@@ -106,11 +106,18 @@
   .down .flipper {
     transform: rotateY(180deg);
   }
+  /* WebKit (Safari on iPhone and iPad) can draw a back face despite backface-visibility, so the
+     hidden face also switches off at the halfway point of the flip, when the card is edge-on. */
   .face {
     position: absolute;
     inset: 0;
     backface-visibility: hidden;
     border-radius: inherit;
+    transition: visibility 0s linear calc(var(--flip-ms, 320ms) / 2);
+  }
+  .card:not(.down) .back,
+  .down .front {
+    visibility: hidden;
   }
   .lg .face {
     box-shadow: 0 3px 0 rgb(3 16 26 / 0.35);
@@ -155,7 +162,8 @@
       0 0 16px 2px rgb(255 226 122 / 0.3);
   }
   @media (prefers-reduced-motion: reduce) {
-    .flipper {
+    .flipper,
+    .face {
       transition: none;
     }
     .selectable {
