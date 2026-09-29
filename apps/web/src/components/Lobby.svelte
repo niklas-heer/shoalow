@@ -2,6 +2,7 @@
   import { MAX_PLAYERS, MAX_TARGET_SCORE, MIN_TARGET_SCORE, type RoomView } from "@shoalow/game";
   import type { Connection } from "../lib/connection.svelte.ts";
   import { router } from "../lib/router.svelte.ts";
+  import { forgetSeat } from "../lib/session.ts";
   import Logo from "./Logo.svelte";
 
   let { room, conn, onrules }: { room: RoomView; conn: Connection; onrules: () => void } = $props();
@@ -35,6 +36,7 @@
 
   function leave() {
     conn.send({ t: "leave" });
+    forgetSeat(room.code);
     router.go("/");
   }
 </script>

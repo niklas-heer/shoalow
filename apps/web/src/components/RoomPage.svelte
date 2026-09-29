@@ -65,7 +65,8 @@
     <Logo />
     <h1>You're no longer at table {code}</h1>
     <p>You left, the host removed your seat, or the table was closed.</p>
-    <button class="btn primary" onclick={() => router.go("/")}>Back to the start</button>
+    <button class="btn primary" onclick={() => location.reload()}>Try to sit down again</button>
+    <button class="btn quiet" onclick={() => router.go("/")}>Back to the start</button>
   </main>
 {:else if conn?.room}
   {#if conn.room.status === "lobby"}

@@ -51,7 +51,16 @@ test("only the lobby allows seat and setting changes", () => {
   expect(room.handle(0, { t: "addBot", level: "easy" }).ok).toBe(false);
   expect(room.handle(1, { t: "leave" }).ok).toBe(false);
   expect(room.handle(0, { t: "setTarget", score: 50 }).ok).toBe(false);
-  expect(room.handle(1, { t: "playAgain" }).ok).toBe(false);
+  expect(room.handle(1, { t: "playAgain" })).toEqual({ ok: true, events: [] });
+  expect(room.snap.gameNumber).toBe(1);
+});
+
+test("a second press of next round or play again changes nothing", () => {
+  const { room } = lobby();
+  room.handle(0, { t: "start" });
+  const before = structuredClone(room.snap.game);
+  expect(room.handle(1, { t: "nextRound" })).toEqual({ ok: true, events: [] });
+  expect(room.snap.game).toEqual(before);
 });
 
 test("a bot plays a taken-over seat and its owner cannot act until they reclaim it", () => {

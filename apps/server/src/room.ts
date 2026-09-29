@@ -168,12 +168,15 @@ export class Room {
         return done(this.startGame());
       }
       case "playAgain": {
-        if (s.game?.phase !== "gameOver") return fail("the game is not over yet");
+        if (!s.game) return fail("no game in progress");
+        // Someone else already pressed it: nothing to do.
+        if (s.game.phase !== "gameOver") return done();
         return done(this.startGame());
       }
       case "nextRound": {
         if (!s.game) return fail("no game in progress");
         if (this.isBotControlled(seat)) return fail("no such seat");
+        if (s.game.phase !== "roundOver") return done();
         return this.apply(SYSTEM, { type: "nextRound" });
       }
       case "takeover": {
