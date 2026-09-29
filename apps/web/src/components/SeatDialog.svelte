@@ -2,10 +2,10 @@
   import type { RoomView } from "@shoalow/game";
   import { onMount } from "svelte";
   import { formatValue } from "../lib/cards.ts";
-  import type { Connection } from "../lib/connection.svelte.ts";
+  import type { TableLink } from "../lib/connection.svelte.ts";
   import Board from "./Board.svelte";
 
-  let { room, conn, seat, onclose }: { room: RoomView; conn: Connection; seat: number; onclose: () => void } = $props();
+  let { room, conn, seat, onclose }: { room: RoomView; conn: TableLink; seat: number; onclose: () => void } = $props();
 
   let dialog: HTMLDialogElement;
   onMount(() => dialog.showModal());

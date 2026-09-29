@@ -11,6 +11,7 @@
     selectable = () => false,
     onpick = () => {},
     bursting = [],
+    anchor,
   }: {
     board: BoardView;
     size?: "lg" | "sm";
@@ -19,6 +20,8 @@
     onpick?: (index: number) => void;
     /** Columns cleared by the latest move, for the bubble burst. */
     bursting?: number[];
+    /** Prefix for the cells' flight anchors; only the live table sets it. */
+    anchor?: string;
   } = $props();
 
   function burst(_node: Element) {
@@ -35,7 +38,7 @@
 
 <div class="board {size}" role="group" aria-label="{owner} cards">
   {#each board.cards as card, i (i)}
-    <div class="cell">
+    <div class="cell" data-anchor={anchor ? `${anchor}-${i}` : undefined}>
       {#if card}
         <div class="slot" out:burst>
           <Card

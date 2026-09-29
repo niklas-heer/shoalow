@@ -3,19 +3,31 @@
   import type { Connection } from "../lib/connection.svelte.ts";
   import { router } from "../lib/router.svelte.ts";
   import { forgetSeat } from "../lib/session.ts";
+  import BotSpeed from "./BotSpeed.svelte";
+  import Choice from "./Choice.svelte";
   import Logo from "./Logo.svelte";
 
   let { room, conn, onrules }: { room: RoomView; conn: Connection; onrules: () => void } = $props();
 
   const isHost = $derived(room.you === room.host);
   const full = $derived(room.seats.length >= MAX_PLAYERS);
+  const hasBots = $derived(room.seats.some((s) => s.kind === "bot"));
   const link = $derived(`${location.origin}/r/${room.code}`);
   let copied = $state(false);
-  let target = $state(0);
 
-  $effect(() => {
-    target = room.settings.targetScore;
-  });
+  const PRESETS = [50, 100, 150, 200];
+  const targets = $derived(
+    [...new Set([...PRESETS, room.settings.targetScore])]
+      .sort((a, b) => a - b)
+      .map((value) => ({ value, label: String(value) })),
+  );
+  const length = $derived(
+    room.settings.targetScore <= 60
+      ? "A quick game, usually 2 to 4 rounds."
+      : room.settings.targetScore <= 120
+        ? "The usual length, often 5 to 8 rounds."
+        : "A long game with many rounds.",
+  );
 
   async function copy() {
     try {
@@ -29,9 +41,9 @@
     }
   }
 
-  function setTarget() {
-    const score = Math.round(Number(target));
-    if (score !== room.settings.targetScore) conn.send({ t: "setTarget", score });
+  function setTarget(score: number) {
+    if (score >= MIN_TARGET_SCORE && score <= MAX_TARGET_SCORE && score !== room.settings.targetScore)
+      conn.send({ t: "setTarget", score });
   }
 
   function leave() {
@@ -57,7 +69,7 @@
   </section>
 
   <section>
-    <h2>Seats <span class="count">{room.seats.length} of {MAX_PLAYERS}</span></h2>
+    <h2>Players <span class="count">{room.seats.length} of {MAX_PLAYERS} seats</span></h2>
     <ol class="seats">
       {#each room.seats as seat, i (seat.name)}
         <li class:me={i === room.you} class:away={!seat.connected}>
@@ -78,29 +90,37 @@
     </ol>
 
     {#if isHost}
+      <h3>Add a bot</h3>
       <div class="bots">
-        <button class="btn" disabled={full} onclick={() => conn.send({ t: "addBot", level: "easy" })}>Add easy bot</button>
-        <button class="btn" disabled={full} onclick={() => conn.send({ t: "addBot", level: "normal" })}
-          >Add normal bot</button
-        >
+        <button class="bot" disabled={full} onclick={() => conn.send({ t: "addBot", level: "easy" })}>
+          <strong>Add easy bot</strong>
+          <span>Makes loose, beatable choices. Good while you learn.</span>
+        </button>
+        <button class="bot" disabled={full} onclick={() => conn.send({ t: "addBot", level: "normal" })}>
+          <strong>Add normal bot</strong>
+          <span>Keeps low cards and hunts for columns. A fair opponent.</span>
+        </button>
       </div>
+      {#if full}<p class="hint">The table is full.</p>{/if}
     {/if}
   </section>
 
   <section class="settings">
-    <label class="field">
-      Play until someone reaches
-      <input
-        type="number"
-        min={MIN_TARGET_SCORE}
-        max={MAX_TARGET_SCORE}
-        step="10"
-        bind:value={target}
+    <h2>Game settings</h2>
+    {#if !isHost}<p class="hint">Only the host can change these.</p>{/if}
+    <div class="setting">
+      <Choice
+        legend="The game ends when someone reaches"
+        options={targets}
+        value={room.settings.targetScore}
         disabled={!isHost}
         onchange={setTarget}
       />
-    </label>
-    <p class="hint">points. The lowest total then wins.</p>
+      <p class="hint">points. The lowest total wins. {length}</p>
+    </div>
+    {#if hasBots}
+      <div class="setting"><BotSpeed {room} link={conn} /></div>
+    {/if}
   </section>
 
   <footer>
@@ -232,26 +252,55 @@
     color: var(--foam);
     background: rgb(226 87 76 / 0.3);
   }
+  h3 {
+    margin: 1.2rem 0 0.6rem;
+    color: var(--mist);
+    font-size: 1rem;
+  }
   .bots {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
     gap: 0.6rem;
-    margin-top: 0.9rem;
+  }
+  .bot {
+    display: grid;
+    gap: 0.2rem;
+    padding: 0.8rem 1rem;
+    border: 2px solid rgb(127 216 200 / 0.5);
+    border-radius: var(--radius);
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    transition:
+      background 120ms,
+      border-color 120ms;
+  }
+  .bot:hover:not(:disabled) {
+    border-color: var(--glass);
+    background: rgb(127 216 200 / 0.1);
+  }
+  .bot strong::before {
+    content: "+ ";
+    color: var(--glass);
+  }
+  .bot span {
+    color: var(--mist);
+    font-size: 0.9rem;
+  }
+  .bot:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
   }
   .settings {
-    display: flex;
-    align-items: end;
-    gap: 0.6rem;
-    flex-wrap: wrap;
+    display: grid;
+    gap: 1.2rem;
   }
-  .settings .field {
-    flex: 0 0 auto;
+  .settings h2 {
+    margin-bottom: 0;
   }
-  .settings input {
-    width: 7rem;
-  }
-  .settings .hint {
-    padding-bottom: 0.7rem;
+  .setting {
+    display: grid;
+    gap: 0.4rem;
   }
   footer {
     display: grid;

@@ -1,6 +1,13 @@
 import type { ClientMessage, GameEvent, RoomView, ServerMessage } from "@shoalow/game";
 import { ApiError, roomInfo } from "./api.ts";
 
+/** What a table screen needs: the current view, the latest events, and a way to act. */
+export interface TableLink {
+  readonly room: RoomView | null;
+  readonly events: { seq: number; list: GameEvent[] };
+  send(msg: ClientMessage): void;
+}
+
 const PING_MS = 25_000;
 const HIDDEN_DISCONNECT_MS = 10 * 60_000;
 const MAX_BACKOFF_MS = 8_000;
@@ -9,7 +16,7 @@ const MAX_BACKOFF_MS = 8_000;
  * One live seat at a table. Reconnects on its own, sends a heartbeat, and lets go of
  * the socket when the tab has been hidden for a while so an idle Fly machine can stop.
  */
-export class Connection {
+export class Connection implements TableLink {
   room = $state<RoomView | null>(null);
   status = $state<"connecting" | "open" | "reconnecting" | "paused">("connecting");
   error = $state<string | null>(null);

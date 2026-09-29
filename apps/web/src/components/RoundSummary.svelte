@@ -2,11 +2,11 @@
   import type { RoomView } from "@shoalow/game";
   import { fly } from "svelte/transition";
   import { formatValue } from "../lib/cards.ts";
-  import type { Connection } from "../lib/connection.svelte.ts";
+  import type { TableLink } from "../lib/connection.svelte.ts";
   import { motion } from "../lib/motion.ts";
   import Board from "./Board.svelte";
 
-  let { room, conn, onhide }: { room: RoomView; conn: Connection; onhide: () => void } = $props();
+  let { room, conn, onhide }: { room: RoomView; conn: TableLink; onhide: () => void } = $props();
 
   const game = $derived(room.game);
   const result = $derived(game?.rounds.at(-1));

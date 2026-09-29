@@ -6,50 +6,37 @@
 
   const game = $derived(room.game);
   const low = $derived(game ? Math.min(...game.totals) : 0);
+  const live = $derived(game?.phase === "turn" || game?.phase === "initialFlip");
 </script>
 
 {#if game}
   <div class="scroll">
     <table>
-      <caption>Scores, first to {game.settings.targetScore} ends the game</caption>
+      <caption>Every round's score. Underlined: who ended the round. ×2: doubled.</caption>
       <thead>
         <tr>
-          <th scope="col">Round</th>
-          {#each room.seats as seat, i}
-            <th scope="col" class:me={i === room.you}>{i === room.you ? "You" : seat.name}</th>
-          {/each}
+          <th scope="col">Player</th>
+          {#each game.rounds as _, r}<th scope="col">{r + 1}</th>{/each}
+          {#if live}<th scope="col" class="live" title="Face-up cards this round">now</th>{/if}
+          <th scope="col">Total</th>
         </tr>
       </thead>
       <tbody>
-        {#each game.rounds as round, r}
-          <tr>
-            <th scope="row">{r + 1}</th>
-            {#each round.scores as score, p}
+        {#each room.seats as seat, p}
+          <tr class:me={p === room.you}>
+            <th scope="row">{p === room.you ? "You" : seat.name}</th>
+            {#each game.rounds as round}
               <td class:ender={round.endedBy === p}>
-                {formatValue(score)}{#if round.doubled === p}<span class="x2" title="Doubled: ended the round without the lowest score">×2</span>{/if}
+                {formatValue(round.scores[p] ?? 0)}{#if round.doubled === p}<span class="x2">×2</span>{/if}
               </td>
             {/each}
+            {#if live}<td class="live">{formatValue(game.boards[p]?.visibleSum ?? 0)}</td>{/if}
+            <td class="total" class:leader={game.rounds.length > 0 && game.totals[p] === low}
+              >{formatValue(game.totals[p] ?? 0)}</td
+            >
           </tr>
-        {:else}
-          <tr><td class="none" colspan={room.seats.length + 1}>No rounds finished yet</td></tr>
         {/each}
-        {#if game.phase === "turn" || game.phase === "initialFlip"}
-          <tr class="live">
-            <th scope="row" title="Face-up cards this round">Now</th>
-            {#each game.boards as board}
-              <td>{formatValue(board.visibleSum)}</td>
-            {/each}
-          </tr>
-        {/if}
       </tbody>
-      <tfoot>
-        <tr>
-          <th scope="row">Total</th>
-          {#each game.totals as total}
-            <td class:leader={game.rounds.length > 0 && total === low}>{formatValue(total)}</td>
-          {/each}
-        </tr>
-      </tfoot>
     </table>
   </div>
 {/if}
@@ -71,34 +58,33 @@
   }
   th,
   td {
-    padding: 0.35rem 0.5rem;
+    padding: 0.4rem 0.55rem;
     text-align: right;
     white-space: nowrap;
   }
   thead th {
-    max-width: 6rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
     color: var(--mist);
     font-size: 0.85rem;
     font-weight: 700;
   }
-  thead th.me {
-    color: var(--glass);
-  }
-  tbody th {
-    color: var(--mist);
-    font-weight: 600;
-  }
   th:first-child {
+    max-width: 9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
     text-align: left;
   }
   tbody tr {
     border-top: 1px solid rgb(168 201 214 / 0.12);
   }
+  tbody th {
+    font-weight: 700;
+  }
+  tr.me th {
+    color: var(--glass);
+  }
   td.ender {
     text-decoration: underline;
-    text-decoration-color: rgb(168 201 214 / 0.5);
+    text-decoration-color: rgb(168 201 214 / 0.6);
     text-underline-offset: 3px;
   }
   .x2 {
@@ -109,21 +95,16 @@
     font-size: 0.75rem;
     font-weight: 800;
   }
-  .live td,
-  .live th {
+  .live {
     color: var(--mist);
     font-style: italic;
   }
-  tfoot {
-    border-top: 2px solid rgb(168 201 214 / 0.35);
-    font-size: 1.1rem;
+  .total {
+    border-left: 2px solid rgb(168 201 214 / 0.3);
+    font-size: 1.05rem;
     font-weight: 800;
   }
   .leader {
     color: var(--lantern);
-  }
-  .none {
-    color: var(--mist);
-    text-align: center;
   }
 </style>

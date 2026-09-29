@@ -1,7 +1,5 @@
 <script lang="ts">
   import type { GameView } from "@shoalow/game";
-  import { fly } from "svelte/transition";
-  import { motion } from "../lib/motion.ts";
   import Card from "./Card.svelte";
 
   let {
@@ -28,13 +26,14 @@
 
 <div class="piles">
   <figure class="pile">
-    <div class="stack" class:thin={game.drawCount < 3}>
+    <div class="stack" class:thin={game.drawCount < 3} data-anchor="deck">
       <Card faceUp={false} selectable={canDraw} label="Draw pile, {game.drawCount} cards" onclick={ondraw} />
     </div>
     <figcaption>{canDraw ? "Draw" : `${game.drawCount} left`}</figcaption>
   </figure>
 
   <figure class="pile">
+    <div class="spot" data-anchor="discard">
     {#if game.discardTop !== null}
       <Card
         value={game.discardTop}
@@ -46,16 +45,17 @@
       <button class="empty" class:drop={canDrop} disabled={!canDrop} onclick={ondrop} aria-label="Discard pile, empty"
       ></button>
     {/if}
+    </div>
     <figcaption>{canDrop ? "Drop here" : canTake ? "Take" : "Discard"}</figcaption>
   </figure>
 
   <figure class="pile hand" aria-live="polite">
-    {#if game.hand !== null}
-      <div class="held" in:fly={{ x: -40, y: -10, duration: motion(300) }}>
-        <Card value={game.hand} label="{holder} holding" />
-      </div>
-      <figcaption>{holder === "You" ? "You hold" : `${holder} holds`}</figcaption>
-    {/if}
+    <div class="spot" data-anchor="hand">
+      {#if game.hand !== null}
+        <div class="held"><Card value={game.hand} label="{holder} holding" /></div>
+      {/if}
+    </div>
+    <figcaption>{#if game.hand !== null}{holder === "You" ? "You hold" : `${holder} holds`}{/if}</figcaption>
   </figure>
 </div>
 
@@ -96,8 +96,8 @@
     border-color: var(--lantern);
     cursor: pointer;
   }
-  .hand {
-    min-height: 1px;
+  .spot {
+    aspect-ratio: 5 / 7;
   }
   .held {
     transform: rotate(4deg);
