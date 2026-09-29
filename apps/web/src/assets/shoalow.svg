@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Shoalow</title>
+  <rect width="64" height="64" rx="17" fill="#0a2a3f"/>
+  <rect x="1" y="1" width="62" height="62" rx="16" fill="none" stroke="#7fd8c8" stroke-opacity=".25"/>
+  <path d="M11 36C7 31 9 25 16 25C12 18 17 12 24 15C25 6 39 6 40 15C47 12 52 18 48 25C55 25 57 31 53 36Q44 50 32 53Q20 50 11 36Z" fill="#7fd8c8"/>
+  <path d="M11 36C7 31 9 25 16 25C12 18 17 12 24 15L32 49Q20 46 11 36Z" fill="#51b4ad"/>
+  <path d="M24 15C25 6 39 6 40 15L32 49Z" fill="#c9f2de"/>
+  <path d="M16 27L28 45M24 17L30 43M32 13V43M40 17L34 43M48 27L36 45" fill="none" stroke="#0e3a52" stroke-width="1.4" stroke-linecap="round" stroke-opacity=".45"/>
+  <path d="M11 37Q21 33 32 39Q43 33 53 37Q44 49 32 51Q20 49 11 37Z" fill="#7fd8c8" stroke="#0e3a52" stroke-width="1.2"/>
+  <path d="M16 39Q32 49 48 39" fill="none" stroke="#c9f2de" stroke-width="1.8" stroke-linecap="round"/>
+  <circle cx="32" cy="37" r="8" fill="#fff1c4" stroke="#0e3a52" stroke-width="1.2"/>
+  <circle cx="29.5" cy="34.5" r="2.4" fill="#fffdf7"/>
+  <path d="M53 9V17M49 13H57" stroke="#ffe27a" stroke-width="1.7" stroke-linecap="round"/>
+</svg>

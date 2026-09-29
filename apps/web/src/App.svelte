@@ -1,5 +1,6 @@
 <script lang="ts">
   import CardGallery from "./components/CardGallery.svelte";
+  import Footer from "./components/Footer.svelte";
   import Home from "./components/Home.svelte";
   import RoomPage from "./components/RoomPage.svelte";
   import Rules from "./components/Rules.svelte";
@@ -24,4 +25,5 @@
   <Home onrules={openRules} />
 {/if}
 
+<Footer />
 <Rules bind:open={rulesOpen} />
