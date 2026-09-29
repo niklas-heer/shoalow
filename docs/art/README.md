@@ -13,6 +13,12 @@ left to right and top to bottom. `Creature.svelte` selects one cell with a neste
 SVG viewport. Vite fingerprints the shared asset for caching; small opponent
 cards retain their large numbers.
 
+The generated cells have uneven transparent padding. The centers in
+`Creature.svelte` were measured from each silhouette's bounds at alpha >= 128,
+in the 1619 × 971 source image. Each clipped cell is translated so its visible
+center lands at the same point on the card, without changing the illustration
+or its size. Recheck these centers when replacing the atlas.
+
 ## Generation prompt
 
 Use case: stylized-concept. Asset type: production transparent sprite atlas for Shoalow playing-card animal illustrations.

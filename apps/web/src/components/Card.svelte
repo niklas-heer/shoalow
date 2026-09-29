@@ -65,7 +65,7 @@
                 <rect x="10" y="32" width="13" height="2.6" rx="1.3" fill={colors.ink} />
                 <rect x="77" y="133" width="13" height="2.6" rx="1.3" fill={colors.ink} />
               {/if}
-              <g transform="translate(6 18) scale(0.88)"><Creature {value} /></g>
+              <g transform="translate(6 24) scale(0.88)"><Creature {value} /></g>
               <text class="species" x="50" y="108" fill={colors.ink}>{CREATURES[value]}</text>
             {:else}
               <rect width="100" height="140" rx="12" fill={colors.fill} />
