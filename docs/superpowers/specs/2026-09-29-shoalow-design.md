@@ -63,7 +63,8 @@ apps/web/       Svelte 5 + Vite: lobby, table, scoreboard, artwork
   - **Easy** plays random legal moves with a mild preference for low cards.
   - **Normal** takes low discards (≤ 3) or column-completing ones, otherwise draws and replaces
     its worst card. It discards high draws to reveal a card, and avoids ending the round unless
-    it expects to have the lowest score.
+    it expects to have the lowest score. Once a round has lasted more than 20 turns per player,
+    it stops avoiding the end, so a table of bots always finishes.
 
 ### Server
 
@@ -73,8 +74,8 @@ apps/web/       Svelte 5 + Vite: lobby, table, scoreboard, artwork
   game. There are 2 to 10 seats, and nobody can join once the game has started.
 - **Identity:** joining issues a random seat token that the browser stores. Reconnecting with it
   restores the seat. There are no accounts.
-- **Messages:** each room is a pub/sub topic. After every accepted action, each connected seat
-  receives its own view plus events for animation.
+- **Messages:** after every accepted action, the server sends each connected socket its own seat's
+  view plus events for animation. Views differ per seat, so there is no shared pub/sub topic.
 - **Bot turns** run after a delay of about 1 second, through the same code path as human actions.
 - **Absent players:** the host can hand an absent player's seat to a bot. The player takes the
   seat back by reconnecting.
