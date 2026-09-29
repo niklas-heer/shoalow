@@ -165,8 +165,11 @@ for (const width of [1440, 1240, 1000, 390]) {
         ),
       );
     const before = await geometry();
-    expect(before[1]?.width, "player cards stay readable").toBeGreaterThanOrEqual(width === 1440 ? 120 : 75);
-    expect(before[2]?.width, "pile cards stay readable").toBeGreaterThanOrEqual(width >= 1000 ? 100 : 80);
+    // The whole table fits the screen, so on a 900px-high window the cards are sized by height.
+    expect(before[1]?.width, "player cards stay readable").toBeGreaterThanOrEqual(width === 1440 ? 95 : 75);
+    expect((before[0]?.y ?? 0) + (before[0]?.height ?? 0), "your cards fit on the screen").toBeLessThanOrEqual(900);
+    // Phones put smaller piles beside the prompt so the whole table fits on one screen.
+    expect(before[2]?.width, "pile cards stay readable").toBeGreaterThanOrEqual(width >= 1000 ? 100 : 56);
     await firstCard.click();
     await expect(page.locator(".prompt")).toHaveText("Reveal one more card");
     await board.locator("button.card.selectable").first().click();

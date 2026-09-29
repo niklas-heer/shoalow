@@ -169,6 +169,22 @@
     min-height: 56px;
     font-size: 1.15rem;
   }
+  /* On phones the coach shares the screen with the table: a fixed, shorter box that scrolls,
+     so the cards below never move when the tip changes. */
+  @media (max-width: 699px), (max-height: 500px) {
+    .coach {
+      height: 8.5rem;
+      min-height: 0;
+      padding: 0.5rem 0.75rem;
+      overflow-y: auto;
+      font-size: 0.9rem;
+    }
+  }
+  @media (max-height: 500px) {
+    .coach {
+      height: 7rem;
+    }
+  }
   @media (max-width: 480px) {
     .facts li {
       grid-template-columns: 1fr;

@@ -81,7 +81,9 @@
   {:else}
     <Table room={conn.room} {conn} {onrules}>
       {#snippet exit()}
-        <button class="btn quiet small" onclick={() => (menuOpen = true)}>Game menu</button>
+        <button class="btn quiet small" aria-label="Game menu" onclick={() => (menuOpen = true)}
+          ><span class="long">Game menu</span><span class="short">Menu</span></button
+        >
       {/snippet}
     </Table>
     {#if menuOpen}
@@ -156,6 +158,17 @@
   .error {
     color: #ffb3aa;
     font-weight: 600;
+  }
+  .short {
+    display: none;
+  }
+  @media (max-width: 480px) {
+    .long {
+      display: none;
+    }
+    .short {
+      display: inline;
+    }
   }
   .toast {
     position: fixed;

@@ -27,10 +27,18 @@ body {
 
 html {
   background: #072031;
+  /* No double-tap zoom: quick taps on cards should always play. */
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
   min-height: 100dvh;
+  /* The page runs edge to edge (viewport-fit=cover); keep content clear of the notch and the
+     status bar when Shoalow is opened from the home screen. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+  -webkit-tap-highlight-color: transparent;
   background:
     radial-gradient(120% 60% at 50% 0%, #15587a 0%, transparent 60%),
     linear-gradient(180deg, var(--tide) 0%, var(--deep) 55%, #072031 100%) fixed;

@@ -1,6 +1,7 @@
 """
 Reproducible Linux checks for Shoalow: lint, strict type checks, rules, simulation
-and server tests, and a browser test where two players and a bot play a round.
+and server tests, and browser tests: two players and a bot play a round in Chromium, and
+the table is checked on iPhone and iPad in WebKit.
 """
 type ShoalowCi {
   pub source: Directory! @defaultPath("/") @ignorePatterns([
@@ -42,7 +43,7 @@ type ShoalowCi {
   }
 
   """
-  Build the client and play a round in Chromium with Playwright.
+  Build the client and run the Playwright tests in Chromium and WebKit (iPhone and iPad).
   """
   pub browser: String! {
     let playwright = container

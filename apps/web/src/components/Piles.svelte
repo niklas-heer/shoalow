@@ -29,7 +29,7 @@
     <div class="stack" class:thin={game.drawCount < 3} data-anchor="deck">
       <Card faceUp={false} selectable={canDraw} label="Draw pile, {game.drawCount} cards" onclick={ondraw} />
     </div>
-    <figcaption><strong>{canDraw ? "Draw a card" : "Draw pile"}</strong><span>{game.drawCount} left · face down</span></figcaption>
+    <figcaption><em>Pile</em><strong>{canDraw ? "Draw a card" : "Draw pile"}</strong><span>{game.drawCount} left · face down</span></figcaption>
   </figure>
 
   <figure class="pile">
@@ -46,7 +46,7 @@
       ></button>
     {/if}
     </div>
-    <figcaption><strong>{canDrop ? "Discard here" : canTake ? "Take this card" : "Discard pile"}</strong><span>{canDrop ? "Then reveal a card" : "Face up"}</span></figcaption>
+    <figcaption><em>Discard</em><strong>{canDrop ? "Discard here" : canTake ? "Take this card" : "Discard pile"}</strong><span>{canDrop ? "Then reveal a card" : "Face up"}</span></figcaption>
   </figure>
 
   <figure class="pile hand" aria-live="polite">
@@ -57,7 +57,7 @@
         <div class="hand-empty" aria-hidden="true"><span>Drawn<br />card</span></div>
       {/if}
     </div>
-    <figcaption><strong>{game.hand !== null ? holder === "You" ? "Your drawn card" : `${holder} holds` : "Your next card"}</strong><span>{game.hand !== null ? "Choose where it goes" : "Draw or take to begin"}</span></figcaption>
+    <figcaption><em>In hand</em><strong>{game.hand !== null ? holder === "You" ? "Your drawn card" : `${holder} holds` : "Your next card"}</strong><span>{game.hand !== null ? "Choose where it goes" : "Draw or take to begin"}</span></figcaption>
   </figure>
 </div>
 
@@ -70,21 +70,48 @@
   }
   .pile {
     display: grid;
-    grid-template-rows: auto 4.6rem;
-    gap: 0.35rem;
+    gap: 0.25rem;
     margin: 0;
     text-align: center;
   }
+  /* Small screens show one word under each pile; the prompt above says what to do. */
   figcaption {
     color: var(--mist);
-    display: grid;
-    align-content: start;
-    gap: 0.15rem;
-    font-size: clamp(0.9rem, 1.1vw, 1.05rem);
-    font-weight: 600;
+    font-size: 0.78rem;
+    font-weight: 650;
   }
-  figcaption strong { color: var(--foam); font-weight: 700; }
-  figcaption span { font-size: 0.8rem; }
+  figcaption em {
+    font-style: normal;
+  }
+  figcaption strong,
+  figcaption span {
+    display: none;
+  }
+  @media (min-width: 700px) and (min-height: 501px) {
+    .pile {
+      grid-template-rows: auto 4.6rem;
+      gap: 0.35rem;
+    }
+    figcaption {
+      display: grid;
+      align-content: start;
+      gap: 0.15rem;
+      font-size: clamp(0.9rem, 1.1vw, 1.05rem);
+      font-weight: 600;
+    }
+    figcaption em {
+      display: none;
+    }
+    figcaption strong {
+      display: block;
+      color: var(--foam);
+      font-weight: 700;
+    }
+    figcaption span {
+      display: block;
+      font-size: 0.8rem;
+    }
+  }
   .stack {
     position: relative;
     filter: drop-shadow(3px 3px 0 #0c3448) drop-shadow(3px 3px 0 #0a2d3e);
@@ -109,7 +136,8 @@
     aspect-ratio: 5 / 7;
     width: 100%;
   }
-  .hand-empty { position: absolute; inset: 0; display: grid; place-items: center; border: 1px dashed rgb(127 216 200 / 0.22); border-radius: 9%/6.5%; color: var(--mist); font-size: 0.95rem; }
+  .hand-empty { position: absolute; inset: 0; display: grid; place-items: center; border: 1px dashed rgb(127 216 200 / 0.22); border-radius: 9%/6.5%; color: var(--mist); font-size: clamp(0.7rem, 22cqw, 0.95rem); }
+  .spot { container-type: inline-size; }
   .held {
     position: absolute;
     inset: 0;

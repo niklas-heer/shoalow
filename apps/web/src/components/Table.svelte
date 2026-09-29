@@ -1,10 +1,11 @@
 <script lang="ts">
   import type { Action, GameEvent, RoomView } from "@shoalow/game";
-  import { type Snippet, untrack } from "svelte";
+  import { onMount, type Snippet, untrack } from "svelte";
   import { formatValue } from "../lib/cards.ts";
   import type { TableLink } from "../lib/connection.svelte.ts";
   import { lastMove, prompt, seatName } from "../lib/describe.ts";
   import { playFlights } from "../lib/flights.ts";
+  import { motion } from "../lib/motion.ts";
   import { sound } from "../lib/sound.svelte.ts";
   import Board from "./Board.svelte";
   import Logo from "./Logo.svelte";
@@ -29,6 +30,9 @@
     /** Extra control at the end of the top bar. */
     exit?: Snippet;
   } = $props();
+
+  // The table fills the screen; a game started from the bottom of the lobby should open at the top.
+  onMount(() => scrollTo(0, 0));
 
   const game = $derived(room.game);
   const me = $derived(room.you);
@@ -59,19 +63,35 @@
   /** Opponents in turn order, starting with the player after me. */
   const opponents = $derived(room.seats.map((_, i) => (me + 1 + i) % room.seats.length).filter((i) => i !== me));
 
-  // Fit every opponent on one row where possible, otherwise two or three, never below a readable size.
+  // Fit every opponent on one row where possible, otherwise on as many rows as the screen height
+  // allows. Tiles never go below a readable size: past that the strip scrolls sideways.
   let stripWidth = $state(0);
+  let viewHeight = $state(900);
   const TILE_MIN = 76;
   const TILE_MAX = 150;
   const TILE_GAP = 8;
   const strip = $derived.by(() => {
     const n = Math.max(1, opponents.length);
     const width = stripWidth || 900;
-    for (let rows = 1; ; rows++) {
+    // Phones keep one swipeable row so your own cards stay large.
+    const maxRows = viewHeight < 500 || width < 600 ? 1 : viewHeight < 950 ? 2 : 3;
+    const maxTile = Math.min(width < 600 ? 120 : TILE_MAX, Math.max(90, viewHeight * 0.14));
+    for (let rows = 1; rows <= maxRows; rows++) {
       const cols = Math.ceil(n / rows);
       const tile = (width - (cols - 1) * TILE_GAP) / cols;
-      if (tile >= TILE_MIN || cols === 1) return { cols, tile: Math.min(width < 600 ? 120 : TILE_MAX, tile) };
+      if (tile >= TILE_MIN || cols === 1) return { cols, tile: Math.min(maxTile, tile) };
     }
+    return { cols: Math.ceil(n / maxRows), tile: TILE_MIN };
+  });
+
+  // When the strip scrolls, keep the player whose turn it is in view.
+  let stripEl = $state<HTMLElement>();
+  $effect(() => {
+    const current = game?.phase === "turn" ? game.current : null;
+    const tile = current === null ? null : stripEl?.querySelector<HTMLElement>(`[data-seat="${current}"]`);
+    if (!stripEl || !tile || stripEl.scrollWidth <= stripEl.clientWidth) return;
+    const left = tile.offsetLeft - (stripEl.clientWidth - tile.offsetWidth) / 2;
+    stripEl.scrollTo({ left, behavior: motion(1) ? "smooth" : "auto" });
   });
 
   const clearedFor = (player: number, list: GameEvent[]) =>
@@ -115,11 +135,13 @@
   const holder = $derived(game ? seatName(room, game.current) : "");
 </script>
 
+<svelte:window bind:innerHeight={viewHeight} />
+
 {#if game && myBoard}
-  <div class="table" class:my-turn={banner.yours}>
+  <div class="table" class:my-turn={banner.yours} class:coached={!!coach}>
     <header class="bar">
       <Logo size={22} />
-      <span class="meta">{room.code}, round {game.round}</span>
+      <span class="meta"><span class="code">{`${room.code}, `}</span>round {game.round}</span>
       <span class="actions">
         <button
           class="btn quiet small icon"
@@ -145,97 +167,95 @@
       </span>
     </header>
 
-    <section
-      class="opponents"
-      class:compact={strip.tile < 110}
-      aria-label="Other players"
-      bind:clientWidth={stripWidth}
-      style:--cols={strip.cols}
-      style:--tile="{strip.tile}px"
-      style:--tile-gap="{TILE_GAP}px"
-    >
-      {#each opponents as p (p)}
-        {@const seat = room.seats[p]}
-        {@const board = game.boards[p]}
-        {#if seat && board}
-          <button
-            class="tile"
-            class:current={game.phase === "turn" && game.current === p}
-            class:away={seat.kind === "human" && !seat.connected && !seat.takenOver}
-            onclick={() => (focused = p)}
-            aria-label="{seat.name}, {board.visibleSum} showing, {game.totals[p]} total. Show larger"
-          >
-            <span class="who">
-              <span class="name">{seat.name}</span>
-              <span class="sum">{formatValue(board.visibleSum)}</span>
-            </span>
-            <Board
-              {board}
-              size="sm"
-              owner={seat.name}
-              anchor="slot-{p}"
-              bursting={clearedFor(p, events)}
-            />
-            <span class="sub">
-              {#if seat.takenOver}bot is playing{:else if seat.kind === "human" && !seat.connected}away{:else if game.endedBy === p}revealed all{:else}{board.faceDown} hidden{/if}
-            </span>
-          </button>
-        {/if}
-      {/each}
+    <section class="opponents" aria-label="Other players" bind:this={stripEl} bind:clientWidth={stripWidth}>
+      <div
+        class="strip"
+        class:compact={strip.tile < 110}
+        style:--cols={strip.cols}
+        style:--tile="{strip.tile}px"
+        style:--tile-gap="{TILE_GAP}px"
+      >
+        {#each opponents as p (p)}
+          {@const seat = room.seats[p]}
+          {@const board = game.boards[p]}
+          {#if seat && board}
+            <button
+              data-seat={p}
+              class="tile"
+              class:current={game.phase === "turn" && game.current === p}
+              class:away={seat.kind === "human" && !seat.connected && !seat.takenOver}
+              onclick={() => (focused = p)}
+              aria-label="{seat.name}, {board.visibleSum} showing, {game.totals[p]} total. Show larger"
+            >
+              <span class="who">
+                <span class="name">{seat.name}</span>
+                <span class="sum">{formatValue(board.visibleSum)}</span>
+              </span>
+              <Board
+                {board}
+                size="sm"
+                owner={seat.name}
+                anchor="slot-{p}"
+                bursting={clearedFor(p, events)}
+              />
+              <span class="sub">
+                {#if seat.takenOver}bot is playing{:else if seat.kind === "human" && !seat.connected}away{:else if game.endedBy === p}revealed all{:else}{board.faceDown} hidden{/if}
+              </span>
+            </button>
+          {/if}
+        {/each}
+      </div>
     </section>
 
-    <section class="play">
-      <div class="banner" class:yours={banner.yours} role="status">
-        <p class="prompt">{banner.text}</p>
-        {#if game.phase === "roundOver" || game.phase === "gameOver"}
-          <button class="btn primary" onclick={() => (hiddenSummaryRound = null)}>
-            {game.phase === "gameOver" ? "Show final results" : "Show round results"}
-          </button>
-        {:else if game.endedBy !== null && game.phase === "turn"}
-          <p class="final">{seatName(room, game.endedBy)} revealed every card. Everyone else gets one last turn.</p>
-        {:else if moveLine}
-          <p class="move">{moveLine}</p>
-        {/if}
-      </div>
+    <div class="banner" class:yours={banner.yours} role="status">
+      <p class="prompt">{banner.text}</p>
+      {#if game.phase === "roundOver" || game.phase === "gameOver"}
+        <button class="btn primary" onclick={() => (hiddenSummaryRound = null)}>
+          {game.phase === "gameOver" ? "Show final results" : "Show round results"}
+        </button>
+      {:else if game.endedBy !== null && game.phase === "turn"}
+        <p class="final">{seatName(room, game.endedBy)} revealed every card. Everyone else gets one last turn.</p>
+      {:else if moveLine}
+        <p class="move">{moveLine}</p>
+      {/if}
+    </div>
 
-      <div class="field">
-        <div class="left">
-          {@render coach?.()}
-          <Piles
-          {game}
-          {holder}
-          canDraw={myTurn && game.stage === "choose"}
-          canTake={myTurn && game.stage === "choose" && game.discardTop !== null}
-          canDrop={myTurn && game.stage === "drawn" && myBoard.faceDown > 0}
-          ondraw={() => act({ type: "drawDeck" })}
-          ontake={() => act({ type: "takeDiscard" })}
-          ondrop={() => act({ type: "discardHand" })}
-          />
-        </div>
+    {#if coach}<div class="coach">{@render coach()}</div>{/if}
 
-        <section class="mine" aria-label="Your cards">
-          <div class="mine-head">
-            <span class="name">You</span>
-            <span class="stat"><strong>{formatValue(myBoard.visibleSum)}</strong> showing</span>
-            <span class="stat"><strong>{formatValue(game.totals[me] ?? 0)}</strong> total</span>
-          </div>
-          <p class="board-hint" class:active={banner.yours}>
-            {#if game.phase === "initialFlip" && myBoard.initialFlips < 2}{myBoard.initialFlips === 0 ? "Tap any two cards to reveal" : "Tap one more card to reveal"}
-            {:else if myTurn && game.stage === "mustFlip"}Tap a face-down card to reveal it
-            {:else if myTurn && (game.stage === "drawn" || game.stage === "fromDiscard")}Tap a card below to swap in your {game.hand}
-            {:else}Match three in a column to clear them{/if}
-          </p>
-          <Board
-            board={myBoard}
-            owner="Your"
-            anchor="slot-{me}"
-            selectable={canPick}
-            action={game.phase === "initialFlip" || game.stage === "mustFlip" ? "Reveal this card" : `Swap with your ${game.hand}`}
-            onpick={pick}
-            bursting={clearedFor(me, events)}
-          />
-        </section>
+    <div class="left">
+      <Piles
+        {game}
+        {holder}
+        canDraw={myTurn && game.stage === "choose"}
+        canTake={myTurn && game.stage === "choose" && game.discardTop !== null}
+        canDrop={myTurn && game.stage === "drawn" && myBoard.faceDown > 0}
+        ondraw={() => act({ type: "drawDeck" })}
+        ontake={() => act({ type: "takeDiscard" })}
+        ondrop={() => act({ type: "discardHand" })}
+      />
+    </div>
+
+    <section class="mine" aria-label="Your cards">
+      <div class="mine-head">
+        <span class="name">You</span>
+        <span class="stat"><strong>{formatValue(myBoard.visibleSum)}</strong> showing</span>
+        <span class="stat"><strong>{formatValue(game.totals[me] ?? 0)}</strong> total</span>
       </div>
+      <p class="board-hint" class:active={banner.yours}>
+        {#if game.phase === "initialFlip" && myBoard.initialFlips < 2}{myBoard.initialFlips === 0 ? "Tap any two cards to reveal" : "Tap one more card to reveal"}
+        {:else if myTurn && game.stage === "mustFlip"}Tap a face-down card to reveal it
+        {:else if myTurn && (game.stage === "drawn" || game.stage === "fromDiscard")}Tap a card below to swap in your {game.hand}
+        {:else}Match three in a column to clear them{/if}
+      </p>
+      <Board
+        board={myBoard}
+        owner="Your"
+        anchor="slot-{me}"
+        selectable={canPick}
+        action={game.phase === "initialFlip" || game.stage === "mustFlip" ? "Reveal this card" : `Swap with your ${game.hand}`}
+        onpick={pick}
+        bursting={clearedFor(me, events)}
+      />
     </section>
 
     <aside class="side" class:open={scoresOpen}>
@@ -258,26 +278,46 @@
 {/if}
 
 <style>
+  /*
+   * The table always fits the screen: the bar, the other players, the prompt and the piles
+   * take what they need, and your own cards get the rest, sized by height as well as width.
+   * Phones (the default) put the prompt beside the piles. Landscape phones move your cards
+   * into their own column. Tablets and desktops put the piles beside your cards, and wide
+   * screens add the score column.
+   */
   .table {
-    --board-w: min(100%, 36rem);
+    --card-gap: clamp(6px, 1.6vw, 10px);
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "bar" "opponents" "play";
-    align-content: start;
-    gap: 0.9rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto auto minmax(15rem, 1fr);
+    grid-template-areas: "bar bar" "opponents opponents" "banner left" "mine mine";
+    gap: 0.6rem 0.75rem;
     max-width: 100rem;
-    min-height: 100dvh;
+    min-height: calc(100dvh - env(safe-area-inset-top));
     margin: 0 auto;
-    padding: 0.5rem 0.75rem calc(1.5rem + env(safe-area-inset-bottom));
+    padding: 0.4rem 0.75rem calc(0.75rem + env(safe-area-inset-bottom));
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  /* The practice game has a single opponent, so on phones the coach sits beside it. */
+  .table.coached {
+    grid-template-columns: minmax(0, 1fr) auto 6.5rem;
+    grid-template-areas: "bar bar bar" "coach coach opponents" "banner left left" "mine mine mine";
   }
   .bar {
     grid-area: bar;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+  .bar :global(.logo .word) {
+    display: none;
   }
   .meta {
     flex: 1;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -285,14 +325,22 @@
     font-size: 0.95rem;
     font-weight: 600;
   }
+  .meta .code {
+    display: none;
+  }
+  @media (max-width: 380px) {
+    .meta {
+      visibility: hidden;
+    }
+  }
   .actions {
     display: flex;
     align-items: center;
-    gap: 0.15rem;
+    gap: 0.1rem;
   }
   :global(.btn.small) {
     min-height: 44px;
-    padding: 0.3em 0.8em;
+    padding: 0.3em 0.6em;
   }
   .icon {
     width: 44px;
@@ -307,14 +355,23 @@
   }
 
   .opponents {
+    position: relative;
     grid-area: opponents;
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .strip {
     display: grid;
     grid-template-columns: repeat(var(--cols), var(--tile));
-    justify-content: center;
     gap: var(--tile-gap);
+    width: max-content;
+    margin-inline: auto;
   }
   .tile {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     align-content: start;
     gap: 0.3rem;
     min-width: 0;
@@ -324,6 +381,7 @@
     background: rgb(6 25 40 / 0.4);
     cursor: pointer;
     text-align: left;
+    touch-action: manipulation;
     transition:
       border-color 200ms,
       box-shadow 200ms,
@@ -371,29 +429,28 @@
     white-space: nowrap;
   }
 
-  .play {
-    grid-area: play;
-    display: grid;
-    justify-items: center;
-    align-content: start;
-    gap: 0.9rem;
-  }
   .banner {
+    grid-area: banner;
     display: grid;
-    gap: 0.15rem;
-    grid-template-rows: 5rem 3.2rem;
-    align-items: center;
-    width: min(100%, 55rem);
-    min-height: 8.5rem;
-    text-align: center;
+    align-content: center;
+    gap: 0.3rem;
+    min-width: 0;
   }
   .banner p {
     margin: 0;
   }
+  .banner .btn {
+    justify-self: start;
+    padding-inline: 0.9em;
+    font-size: 0.9rem;
+  }
   .prompt {
-    font-size: clamp(1.15rem, 2.3vw, 1.55rem);
+    font-size: 1.05rem;
     font-weight: 750;
     letter-spacing: -0.01em;
+    line-height: 1.25;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
   }
   .yours .prompt {
     color: var(--lantern);
@@ -402,65 +459,101 @@
   .move,
   .final {
     color: var(--mist);
-    font-size: 0.95rem;
-  }
-  .prompt, .move, .final {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
+    font-size: 0.85rem;
+    line-height: 1.3;
     -webkit-line-clamp: 2;
     line-clamp: 2;
+  }
+  .prompt,
+  .move,
+  .final {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
     overflow: hidden;
   }
   .final {
     color: #ffc9a8;
     font-weight: 600;
   }
-  .field {
+  .coach {
+    grid-area: coach;
     display: grid;
     justify-items: center;
-    gap: 1rem;
-    width: 100%;
+    gap: 0.5rem;
+    min-width: 0;
   }
   .left {
-    display: grid;
-    justify-items: center;
-    gap: 1rem;
-    width: 100%;
+    grid-area: left;
+    align-self: center;
+    min-width: 0;
   }
-  .field :global(.piles) {
-    --pile-w: clamp(5.2rem, 23vw, 6rem);
+  .left :global(.piles) {
+    --pile-w: clamp(3.3rem, 15vw, 4.6rem);
+    gap: 0.45rem;
   }
+
+  /* Your grid is as large as the space below the head allows, in both directions. */
   .mine {
+    --head-h: 2.5rem;
+    --above: calc(var(--head-h) + 0.4rem);
+    --board-w: min(
+      100cqw,
+      36rem,
+      calc((100cqh - var(--above) - 2 * var(--card-gap)) / 1.05 + 3 * var(--card-gap))
+    );
+    grid-area: mine;
+    container-type: size;
     display: grid;
-    gap: 0.5rem;
+    align-content: start;
+    justify-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+  }
+  .mine > :global(*) {
     width: var(--board-w);
   }
+  .mine > .mine-head {
+    width: max(var(--board-w), min(100%, 19rem));
+  }
   .mine :global(.board) {
-    --gap: clamp(6px, 1.6vw, 10px);
+    --gap: var(--card-gap);
   }
   .mine-head {
     display: flex;
     align-items: baseline;
-    gap: 1rem;
-    padding: 0.5rem 0.75rem;
+    gap: 0.8rem;
+    height: var(--head-h);
+    padding: 0.35rem 0.75rem;
     border-radius: 12px;
     background: rgb(127 216 200 / 0.08);
+    white-space: nowrap;
   }
-  .board-hint { margin: 0; min-height: 3.2rem; display: grid; align-items: center; color: var(--mist); font-size: 1rem; text-align: center; }
-  .board-hint.active { color: var(--lantern); }
   .mine-head .name {
     flex: 1;
-    font-size: 1.4rem;
+    font-size: 1.15rem;
     font-weight: 800;
   }
   .stat {
     color: var(--mist);
-    font-size: 0.95rem;
+    font-size: 0.9rem;
   }
   .stat strong {
     color: var(--foam);
-    font-size: 1.4rem;
+    font-size: 1.15rem;
     font-variant-numeric: tabular-nums;
+  }
+  .board-hint {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    height: 2rem;
+    margin: 0;
+    color: var(--mist);
+    font-size: 1rem;
+    text-align: center;
+  }
+  .board-hint.active {
+    color: var(--lantern);
   }
 
   .side {
@@ -472,12 +565,15 @@
     align-content: start;
     gap: 0.5rem;
     width: min(22rem, 92vw);
-    padding: 1rem;
+    padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+      calc(1rem + env(safe-area-inset-bottom)) 1rem;
     overflow-y: auto;
     background: #0b3147;
     box-shadow: -12px 0 40px rgb(0 0 0 / 0.45);
     transform: translateX(105%);
     transition: transform 240ms ease;
+    -webkit-user-select: text;
+    user-select: text;
   }
   .side.open {
     visibility: visible;
@@ -487,24 +583,129 @@
     justify-self: end;
   }
 
-  @media (min-width: 1000px) {
-    .table {
-      grid-template-columns: minmax(0, 1fr) 19rem;
+  /* Landscape phones: everything else on the left, your cards on the right. */
+  @media (min-width: 640px) and (max-height: 500px) {
+    .table,
+    .table.coached {
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 0.9fr);
+      grid-template-rows: auto auto auto 1fr;
+      grid-template-areas:
+        "bar bar mine"
+        "opponents opponents mine"
+        "banner left mine"
+        ". . mine";
+      column-gap: 1rem;
+    }
+    .table.coached {
+      grid-template-areas:
+        "bar bar mine"
+        "coach opponents mine"
+        "banner left mine"
+        ". . mine";
+    }
+    .sub {
+      display: none;
+    }
+    .left :global(.piles) {
+      --pile-w: min(4.2rem, 16dvh);
+    }
+  }
+
+  /* Tablets and desktops: the prompt spans the table, the piles sit beside your cards. */
+  @media (min-width: 700px) and (min-height: 501px) {
+    .table,
+    .table.coached {
+      grid-template-columns: minmax(13rem, 22rem) minmax(0, 36rem);
+      grid-template-rows: auto auto auto auto minmax(12rem, 1fr);
       grid-template-areas:
         "bar bar"
-        "opponents side"
-        "play side";
-      grid-template-rows: auto auto 1fr;
-      column-gap: 1.5rem;
+        "opponents opponents"
+        "banner banner"
+        "coach mine"
+        "left mine";
+      justify-content: center;
+      gap: 0.9rem 1.5rem;
+      padding-top: 0.5rem;
+    }
+    .bar {
+      gap: 0.75rem;
+    }
+    .bar :global(.logo .word),
+    .meta .code {
+      display: inline;
+    }
+    :global(.btn.small) {
+      padding-inline: 0.8em;
+    }
+    .banner {
+      grid-template-rows: 3.6rem 1.6rem;
+      justify-items: center;
+      width: min(100%, 55rem);
+      justify-self: center;
+      text-align: center;
+    }
+    .banner .btn {
+      justify-self: center;
+      font-size: 1rem;
+    }
+    .prompt {
+      font-size: clamp(1.15rem, 2.3vw, 1.55rem);
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+    }
+    .move,
+    .final {
+      font-size: 0.95rem;
+      -webkit-line-clamp: 1;
+      line-clamp: 1;
+    }
+    .coach {
+      justify-items: stretch;
+      align-self: start;
+    }
+    .left {
+      align-self: start;
+    }
+    .left :global(.piles) {
+      --pile-w: min(7rem, calc((100% - 2rem) / 3));
+      justify-content: start;
+      gap: 1rem;
+    }
+    .mine {
+      --head-h: 3rem;
+      --above: calc(var(--head-h) + 2rem + 0.8rem);
+    }
+    .mine-head .name {
+      font-size: 1.4rem;
+    }
+    .stat {
+      font-size: 0.95rem;
+    }
+    .stat strong {
+      font-size: 1.4rem;
+    }
+    .board-hint {
+      display: flex;
+    }
+  }
+
+  @media (min-width: 1200px) and (min-height: 501px) {
+    .table,
+    .table.coached {
+      grid-template-columns: minmax(13rem, 22rem) minmax(0, 36rem) 19rem;
+      grid-template-areas:
+        "bar bar bar"
+        "opponents opponents side"
+        "banner banner side"
+        "coach mine side"
+        "left mine side";
     }
     .side {
       visibility: visible;
       grid-area: side;
-      position: sticky;
-      top: 0.5rem;
+      position: static;
+      contain: size;
       width: auto;
-      align-self: start;
-      max-height: calc(100dvh - 1rem);
       border-radius: var(--radius);
       background: rgb(6 25 40 / 0.4);
       box-shadow: none;
@@ -514,33 +715,6 @@
     .scores-toggle,
     .close {
       display: none;
-    }
-    .field :global(.piles) {
-      --pile-w: 7rem;
-    }
-  }
-
-  @media (max-width: 600px) {
-    .bar { flex-wrap: wrap; gap: 0.25rem 0.75rem; }
-    .meta { min-width: 0; }
-    .actions { flex-basis: 100%; justify-content: flex-end; }
-  }
-
-  @media (min-width: 1240px) {
-    .field {
-      grid-template-columns: minmax(14rem, 23rem) minmax(0, 36rem);
-      justify-content: center;
-      align-items: start;
-      column-gap: 2rem;
-    }
-    .left {
-      justify-items: stretch;
-    }
-    .mine {
-      width: 100%;
-    }
-    .left :global(.piles) {
-      justify-content: start;
     }
   }
 </style>
