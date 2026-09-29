@@ -43,6 +43,10 @@ run = "bun test packages/game/test/simulation.test.ts --timeout 600000"
 description = "Build the web client"
 run = "bun run --cwd apps/web build"
 
+[tasks.icons]
+description = "Render the home-screen icons from the logo"
+run = "bun apps/web/scripts/icons.ts"
+
 [tasks.start]
 description = "Serve the built client and the game server"
 depends = ["build"]

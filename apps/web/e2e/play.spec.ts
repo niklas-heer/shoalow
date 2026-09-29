@@ -220,3 +220,16 @@ test("a table reconnects straight away when a phone wakes up with a dead connect
   await page.getByRole("button", { name: "Add normal bot" }).click();
   await expect(page.locator(".seats li")).toHaveCount(2);
 });
+
+test("the game can be added to a phone's home screen", async ({ page }) => {
+  await page.goto("/");
+  const manifestUrl = await page.locator('link[rel="manifest"]').getAttribute("href");
+  const manifest = await (await page.request.get(manifestUrl ?? "")).json();
+  expect(manifest).toMatchObject({ name: "Shoalow", display: "standalone", start_url: "/" });
+  const touchIcon = await page.locator('link[rel="apple-touch-icon"]').getAttribute("href");
+  for (const src of [touchIcon, ...manifest.icons.map((icon: { src: string }) => icon.src)]) {
+    const response = await page.request.get(src ?? "");
+    expect(response.ok(), src ?? "").toBe(true);
+    expect(response.headers()["content-type"]).toContain("image/png");
+  }
+});
