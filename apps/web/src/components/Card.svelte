@@ -65,8 +65,8 @@
                 <rect x="10" y="32" width="13" height="2.6" rx="1.3" fill={colors.ink} />
                 <rect x="77" y="133" width="13" height="2.6" rx="1.3" fill={colors.ink} />
               {/if}
-              <g transform="translate(6 30) scale(0.88)"><Creature {value} /></g>
-              <text class="species" x="50" y="120" fill={colors.ink}>{CREATURES[value]}</text>
+              <g transform="translate(6 18) scale(0.88)"><Creature {value} /></g>
+              <text class="species" x="50" y="108" fill={colors.ink}>{CREATURES[value]}</text>
             {:else}
               <rect width="100" height="140" rx="12" fill={colors.fill} />
               <text class="big" x="50" y="74" fill={colors.ink}>{formatValue(value)}</text>
@@ -115,7 +115,7 @@
   .lg .face {
     box-shadow: 0 3px 0 rgb(3 16 26 / 0.35);
   }
-  .face :global(svg) {
+  .face > :global(svg) {
     display: block;
     width: 100%;
     height: 100%;

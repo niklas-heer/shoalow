@@ -1,4 +1,5 @@
 <script lang="ts">
+  import CardGallery from "./components/CardGallery.svelte";
   import Home from "./components/Home.svelte";
   import RoomPage from "./components/RoomPage.svelte";
   import Rules from "./components/Rules.svelte";
@@ -17,6 +18,8 @@
   {/key}
 {:else if router.learning}
   <Tutorial onrules={openRules} />
+{:else if router.cards}
+  <CardGallery />
 {:else}
   <Home onrules={openRules} />
 {/if}

@@ -1,4 +1,4 @@
-/** Minimal path router: "/" is home, "/r/CODE" is a table, "/learn" is the tutorial. */
+/** Minimal path router for home, tables, the tutorial and the card gallery. */
 class Router {
   path = $state(location.pathname);
 
@@ -16,6 +16,10 @@ class Router {
 
   get learning(): boolean {
     return /^\/learn\/?$/.test(this.path);
+  }
+
+  get cards(): boolean {
+    return /^\/cards\/?$/.test(this.path);
   }
 
   get roomCode(): string | null {

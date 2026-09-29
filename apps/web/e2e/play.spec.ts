@@ -1,5 +1,25 @@
 import { expect, type Page, test } from "@playwright/test";
 
+test("browse every illustrated card and return to the game", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Your name").fill("Anna");
+  await page.getByRole("button", { name: "Meet the cards", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Meet the shoal" })).toBeVisible();
+  const cards = page.getByRole("region", { name: "All fifteen cards" }).getByRole("img");
+  await expect(cards).toHaveCount(15);
+  await expect(cards.first()).toHaveAttribute("aria-label", "−2, pearl clam");
+  await expect(cards.last()).toHaveAttribute("aria-label", "12, anglerfish");
+  const asset = await cards.first().locator("image").getAttribute("href");
+  expect(asset).toBeTruthy();
+  const response = await page.request.get(asset ?? "");
+  expect(response.ok()).toBe(true);
+  expect(response.headers()["content-type"]).toContain("image/png");
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Meet the shoal" })).toBeVisible();
+  await page.getByRole("button", { name: "Back to Shoalow" }).click();
+  await expect(page.getByRole("button", { name: "Create a table" })).toBeVisible();
+});
+
 /** Takes one sensible step if this page has something to do; returns whether it acted. */
 async function step(page: Page): Promise<boolean> {
   const selectable = page.locator("button.card.selectable");

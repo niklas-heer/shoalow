@@ -80,6 +80,7 @@
   <div class="learn">
     <button class="btn" onclick={() => router.go("/learn")}>Learn with a practice game</button>
     <button class="btn quiet" onclick={onrules}>Read the rules</button>
+    <button class="btn quiet" onclick={() => router.go("/cards")}>Meet the cards</button>
   </div>
 </main>
 
