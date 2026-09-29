@@ -1,0 +1,11 @@
+{
+  "name": "@shoalow/server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "DATA_DIR=../../.data bun --watch src/main.ts"
+  },
+  "dependencies": {
+    "@shoalow/game": "workspace:*"
+  }
+}
