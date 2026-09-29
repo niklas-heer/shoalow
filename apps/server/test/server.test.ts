@@ -245,6 +245,10 @@ test("bad requests are refused with clear errors", async () => {
   const { code, token } = await createRoom(app);
   const info = await fetch(new URL(`/api/rooms/${code}`, app.url));
   expect(await info.json()).toEqual({ code, status: "lobby", players: 1 });
+  const seated = await fetch(new URL(`/api/rooms/${code}?token=${token}`, app.url));
+  expect(await seated.json()).toMatchObject({ seated: true });
+  const stranger = await fetch(new URL(`/api/rooms/${code}?token=nope`, app.url));
+  expect(await stranger.json()).toMatchObject({ seated: false });
 
   const ws = new URL(`/ws?room=${code}&token=nope`, app.url);
   expect((await fetch(ws)).status).toBe(404);

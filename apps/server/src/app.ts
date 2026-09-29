@@ -204,7 +204,9 @@ export function createServer(options: ServerOptions) {
         const room = rooms.get(code);
         if (!room) return error("no room with that code", 404);
         if (!match[2] && req.method === "GET") {
-          return json({ code, status: room.snap.status, players: room.snap.seats.length });
+          const token = url.searchParams.get("token");
+          const seated = token === null ? {} : { seated: room.seatOf(token) !== -1 };
+          return json({ code, status: room.snap.status, players: room.snap.seats.length, ...seated });
         }
         if (match[2] && req.method === "POST") {
           const joined = room.join(await readName(req));

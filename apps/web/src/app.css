@@ -1,0 +1,157 @@
+@import "@fontsource-variable/bricolage-grotesque";
+
+:root {
+  --deep: #0a2a3f;
+  --tide: #0e3a52;
+  --shelf: #124a63;
+  --current: #1d6480;
+  --foam: #f3fbf8;
+  --mist: #a8c9d6;
+  --lantern: #ffe27a;
+  --coral: #e2574c;
+  --glass: #7fd8c8;
+  --radius: 14px;
+  --font: "Bricolage Grotesque Variable", ui-rounded, system-ui, sans-serif;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+html {
+  background: #072031;
+}
+
+body {
+  min-height: 100dvh;
+  background:
+    radial-gradient(120% 60% at 50% 0%, #15587a 0%, transparent 60%),
+    linear-gradient(180deg, var(--tide) 0%, var(--deep) 55%, #072031 100%) fixed;
+  color: var(--foam);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.45;
+  font-variation-settings: "wdth" 100;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+a {
+  color: var(--glass);
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  min-height: 44px;
+  padding: 0.55em 1.1em;
+  border: 2px solid var(--glass);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--foam);
+  font-weight: 650;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background 120ms,
+    transform 120ms;
+}
+
+.btn:hover {
+  background: rgb(127 216 200 / 0.14);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn.primary {
+  background: var(--lantern);
+  border-color: var(--lantern);
+  color: var(--deep);
+}
+
+.btn.primary:hover {
+  background: #fff0a8;
+}
+
+.btn.quiet {
+  border-color: transparent;
+  color: var(--mist);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+:focus-visible {
+  outline: 3px solid var(--lantern);
+  outline-offset: 2px;
+}
+
+.field {
+  display: grid;
+  gap: 0.35em;
+  font-weight: 600;
+  color: var(--mist);
+}
+
+.field input {
+  min-height: 48px;
+  padding: 0.5em 0.8em;
+  border: 2px solid var(--current);
+  border-radius: 12px;
+  background: rgb(6 25 40 / 0.6);
+  color: var(--foam);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.field input:focus {
+  border-color: var(--glass);
+  outline: none;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    /* biome-ignore-start lint/complexity/noImportantStyles: reduced motion must win over every component style */
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    /* biome-ignore-end lint/complexity/noImportantStyles: reduced motion must win over every component style */
+  }
+}

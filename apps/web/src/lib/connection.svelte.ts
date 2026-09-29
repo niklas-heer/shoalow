@@ -1,0 +1,132 @@
+import type { ClientMessage, GameEvent, RoomView, ServerMessage } from "@shoalow/game";
+import { ApiError, roomInfo } from "./api.ts";
+
+const PING_MS = 25_000;
+const HIDDEN_DISCONNECT_MS = 10 * 60_000;
+const MAX_BACKOFF_MS = 8_000;
+
+/**
+ * One live seat at a table. Reconnects on its own, sends a heartbeat, and lets go of
+ * the socket when the tab has been hidden for a while so an idle Fly machine can stop.
+ */
+export class Connection {
+  room = $state<RoomView | null>(null);
+  status = $state<"connecting" | "open" | "reconnecting" | "paused">("connecting");
+  error = $state<string | null>(null);
+  removed = $state(false);
+  /** Events from the latest update, with a counter so repeated identical events still register. */
+  events = $state<{ seq: number; list: GameEvent[] }>({ seq: 0, list: [] });
+
+  private ws: WebSocket | null = null;
+  private ping: ReturnType<typeof setInterval> | undefined;
+  private retry: ReturnType<typeof setTimeout> | undefined;
+  private hiddenTimer: ReturnType<typeof setTimeout> | undefined;
+  private errorTimer: ReturnType<typeof setTimeout> | undefined;
+  private attempts = 0;
+  private closed = false;
+
+  constructor(
+    readonly code: string,
+    readonly token: string,
+  ) {
+    document.addEventListener("visibilitychange", this.onVisibility);
+    this.connect();
+  }
+
+  private connect(): void {
+    clearTimeout(this.retry);
+    const scheme = location.protocol === "https:" ? "wss:" : "ws:";
+    const ws = new WebSocket(
+      `${scheme}//${location.host}/ws?room=${this.code}&token=${encodeURIComponent(this.token)}`,
+    );
+    this.ws = ws;
+    ws.onopen = () => {
+      this.attempts = 0;
+      this.status = "open";
+      clearInterval(this.ping);
+      this.ping = setInterval(() => this.send({ t: "ping" }), PING_MS);
+    };
+    ws.onmessage = (e) => this.receive(JSON.parse(String(e.data)) as ServerMessage);
+    let opened = false;
+    ws.addEventListener("open", () => {
+      opened = true;
+    });
+    ws.onclose = async () => {
+      clearInterval(this.ping);
+      if (this.ws !== ws) return;
+      this.ws = null;
+      if (this.closed || this.removed || this.status === "paused") return;
+      this.status = "reconnecting";
+      if (!opened && (await this.seatIsGone())) {
+        this.removed = true;
+        return;
+      }
+      const delay = Math.min(MAX_BACKOFF_MS, 500 * 2 ** this.attempts++);
+      this.retry = setTimeout(() => this.connect(), delay);
+    };
+  }
+
+  /** A refused connection is either a network problem or a seat that no longer exists. */
+  private async seatIsGone(): Promise<boolean> {
+    try {
+      const info = await roomInfo(this.code, this.token);
+      return info.seated === false;
+    } catch (e) {
+      return e instanceof ApiError && /no room/i.test(e.message);
+    }
+  }
+
+  private receive(msg: ServerMessage): void {
+    switch (msg.t) {
+      case "room":
+        this.room = msg.room;
+        this.events = { seq: this.events.seq + 1, list: msg.events };
+        return;
+      case "error":
+        this.showError(msg.message);
+        return;
+      case "removed":
+        this.removed = true;
+        this.close();
+        return;
+      case "pong":
+        return;
+    }
+  }
+
+  private showError(message: string): void {
+    this.error = message.charAt(0).toUpperCase() + message.slice(1);
+    clearTimeout(this.errorTimer);
+    this.errorTimer = setTimeout(() => {
+      this.error = null;
+    }, 4000);
+  }
+
+  send(msg: ClientMessage): void {
+    if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(msg));
+    else if (msg.t !== "ping") this.showError("Not connected yet. Your move was not sent.");
+  }
+
+  private onVisibility = (): void => {
+    clearTimeout(this.hiddenTimer);
+    if (document.hidden) {
+      this.hiddenTimer = setTimeout(() => {
+        this.status = "paused";
+        this.ws?.close(1000, "tab hidden");
+      }, HIDDEN_DISCONNECT_MS);
+    } else if (this.status === "paused" && !this.closed) {
+      this.status = "connecting";
+      this.connect();
+    }
+  };
+
+  close(): void {
+    this.closed = true;
+    clearInterval(this.ping);
+    clearTimeout(this.retry);
+    clearTimeout(this.hiddenTimer);
+    document.removeEventListener("visibilitychange", this.onVisibility);
+    this.ws?.close(1000, "bye");
+    this.ws = null;
+  }
+}
