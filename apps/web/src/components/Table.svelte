@@ -452,9 +452,10 @@
     -webkit-line-clamp: 3;
     line-clamp: 3;
   }
+  /* A filter glow, unlike text-shadow, is not cut off by the line clamp's overflow. */
   .yours .prompt {
     color: var(--lantern);
-    text-shadow: 0 0 22px rgb(255 226 122 / 0.45);
+    filter: drop-shadow(0 0 14px rgb(255 226 122 / 0.4));
   }
   .move,
   .final {
@@ -672,6 +673,7 @@
       gap: 1rem;
     }
     .mine {
+      justify-items: start;
       --head-h: 3rem;
       --above: calc(var(--head-h) + 2rem + 0.8rem);
     }
