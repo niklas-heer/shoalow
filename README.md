@@ -12,7 +12,8 @@ protected, are shared.
 ## Play
 
 Open the site, enter your name and create a table. Share the link or the five-letter code. The host
-adds bots if wanted (Easy or Normal), picks the target score and starts. Your seat is remembered in
+adds bots if wanted (Easy or Normal), picks the target score and how fast bots move, and starts. New
+players can learn with a practice game against a bot, with a coach explaining each step. Your seat is remembered in
 the browser, so a refresh or a locked phone puts you straight back into the game. If someone has to
 leave, the host can let a bot play their cards until they come back.
 

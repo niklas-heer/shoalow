@@ -70,13 +70,14 @@ apps/web/       Svelte 5 + Vite: lobby, table, scoreboard, artwork
 
 - **Rooms** have a 5-character code (no ambiguous letters) and a shareable link. The creator is
   the host.
-- **Lobby:** the host adds or removes bots (Easy or Normal), sets the target score and starts the
-  game. There are 2 to 10 seats, and nobody can join once the game has started.
+- **Lobby:** the host adds or removes bots (Easy or Normal, each explained in one line), picks the
+  target score (50, 100, 150 or 200) and the bot speed, and starts the game. There are 2 to 10 seats, and nobody can join once the game has started.
 - **Identity:** joining issues a random seat token that the browser stores. Reconnecting with it
   restores the seat. There are no accounts.
 - **Messages:** after every accepted action, the server sends each connected socket its own seat's
   view plus events for animation. Views differ per seat, so there is no shared pub/sub topic.
-- **Bot turns** run after a delay of about 1 second, through the same code path as human actions.
+- **Bot turns** run through the same code path as human actions, after a pause per step that the
+  host sets at any time: slow (about 2.5 s), normal (about 1.4 s) or fast (about 0.6 s).
 - **Absent players:** the host can hand an absent player's seat to a bot. The player takes the
   seat back by reconnecting.
 - **Persistence:** SQLite (`bun:sqlite`) at `DATA_DIR/shoalow.sqlite`. Every accepted action is
@@ -88,16 +89,23 @@ apps/web/       Svelte 5 + Vite: lobby, table, scoreboard, artwork
 ### Web client
 
 - **Screens:** home (create or join, name remembered), lobby, table, round summary, game over
-  (play again with the same seats), rules.
-- **Table (layout A):** your grid large at the bottom, the draw and discard piles in the middle,
-  opponents as small boards across the top that wrap or scroll. Tap a board to enlarge it.
+  (play again with the same seats), rules, and a tutorial.
+- **Tutorial (`/learn`):** a practice game against one Easy bot that runs entirely in the browser
+  with the same engine. A coach under the banner explains the current step and remarks on cleared
+  columns and the round ending.
+- **Table (layout A):** your grid large at the bottom, the draw and discard piles beside it on wide
+  screens and above it on narrow ones, opponents as small boards across the top. Opponent boards
+  are sized to fit one row, or two or three rows when they would get too small to read. Tap a
+  board to enlarge it.
 - **Interaction:** everything is by tapping; legal targets are highlighted and everything else is
   dimmed. Other players' turns show a banner, and when a player ends the round a final-turn
   banner appears.
-- **Scores:** a live sum of face-up cards on every board, plus a scoreboard panel with every
-  round's score and the running totals.
-- **Animations:** card flips, card moves and column clears. They are turned off when the device
-  asks for reduced motion.
+- **Scores:** a live sum of face-up cards on every board, and a standings list sorted by total in a
+  sidebar (a drawer on phones). Every round's score opens in a table with one row per player.
+- **Animations:** card flips, cards flying between the piles, the hand and the grids, and column
+  clears. They are turned off when the device asks for reduced motion.
+- **Sound:** short synthesized sounds (no audio files) for flips, draws, swaps, cleared columns,
+  your turn and the end of a round, with a mute switch that the browser remembers.
 - **Background tabs:** a tab hidden for more than 10 minutes closes its socket and reconnects
   when it becomes visible again, so forgotten tabs do not keep the Fly machine awake.
 - **Artwork:** original flat SVG in the flat and bold style. Solid value-band colors: lilac pearl
@@ -122,9 +130,11 @@ apps/web/       Svelte 5 + Vite: lobby, table, scoreboard, artwork
   | 11 | shark |
   | 12 | grumpy anglerfish |
 
-  There is also a card back and a logo.
+  Large cards show the value in two corners (6 and 9 underlined) over a low swell of darker water.
+  Small cards on opponents' boards show only the value, and their backs are plain, so face-up
+  values stand out. There is also a card back and a logo.
 
-Out of scope for now: chat, sound, accounts, spectators, rule variants.
+Out of scope for now: chat, accounts, spectators, rule variants.
 
 ## Tooling and testing
 
