@@ -1,9 +1,11 @@
 import {
   applyAction,
   type BotLevel,
+  type BotSpeed,
   type ClientMessage,
   chooseAction,
   cleanName,
+  DEFAULT_BOT_SPEED,
   DEFAULT_TARGET_SCORE,
   type GameEvent,
   type GameState,
@@ -32,6 +34,8 @@ export interface RoomSnapshot {
   seats: Seat[];
   host: number;
   settings: Settings;
+  /** Missing in snapshots saved before bot speeds existed. */
+  botSpeed?: BotSpeed;
   status: "lobby" | "playing";
   game: GameState | null;
   gameNumber: number;
@@ -64,6 +68,7 @@ export class Room {
       seats: [{ token, name: hostName, kind: "human", level: null, takenOver: false }],
       host: 0,
       settings: { targetScore: DEFAULT_TARGET_SCORE },
+      botSpeed: DEFAULT_BOT_SPEED,
       status: "lobby",
       game: null,
       gameNumber: 0,
@@ -74,6 +79,10 @@ export class Room {
 
   get code(): string {
     return this.snap.code;
+  }
+
+  get botSpeed(): BotSpeed {
+    return this.snap.botSpeed ?? DEFAULT_BOT_SPEED;
   }
 
   seatOf(token: string): number {
@@ -159,6 +168,11 @@ export class Room {
           return fail(`the target must be between ${MIN_TARGET_SCORE} and ${MAX_TARGET_SCORE}`);
         }
         s.settings = { ...s.settings, targetScore: msg.score };
+        return done();
+      }
+      case "setBotSpeed": {
+        if (!isHost) return fail("only the host can change the bot speed");
+        s.botSpeed = msg.speed;
         return done();
       }
       case "start": {
@@ -248,6 +262,7 @@ export class Room {
         takenOver: x.takenOver,
       })),
       settings: { ...s.settings },
+      botSpeed: this.botSpeed,
       status: s.status,
       game: s.game ? viewFor(s.game, seat) : null,
     };

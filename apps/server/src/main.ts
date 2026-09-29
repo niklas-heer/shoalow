@@ -4,7 +4,7 @@ const app = createServer({
   port: Number(process.env.PORT ?? 3000),
   dataDir: process.env.DATA_DIR ?? "./data",
   ...(process.env.STATIC_DIR ? { staticDir: process.env.STATIC_DIR } : {}),
-  botDelayMs: Number(process.env.BOT_DELAY_MS ?? 1000),
+  botDelayMs: Number(process.env.BOT_DELAY_MS ?? 1400),
 });
 
 console.log(`Shoalow listening on ${app.url}`);

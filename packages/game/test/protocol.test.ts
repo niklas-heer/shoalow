@@ -9,6 +9,7 @@ test("valid client messages parse to exactly their known fields", () => {
   expect(parseClientMessage('{"t":"addBot","level":"easy"}')).toEqual({ t: "addBot", level: "easy" });
   expect(parseClientMessage('{"t":"takeover","seat":2,"bot":true}')).toEqual({ t: "takeover", seat: 2, bot: true });
   expect(parseClientMessage('{"t":"start"}')).toEqual({ t: "start" });
+  expect(parseClientMessage('{"t":"setBotSpeed","speed":"slow"}')).toEqual({ t: "setBotSpeed", speed: "slow" });
 });
 
 test("malformed or unknown client messages are rejected", () => {
@@ -23,6 +24,7 @@ test("malformed or unknown client messages are rejected", () => {
     '{"t":"addBot","level":"hard"}',
     '{"t":"setTarget","score":"100"}',
     '{"t":"takeover","seat":1}',
+    '{"t":"setBotSpeed","speed":"turbo"}',
   ]) {
     expect(parseClientMessage(bad)).toBeNull();
   }

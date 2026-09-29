@@ -8,7 +8,7 @@ kill_timeout = "10s"
   PORT = "8080"
   DATA_DIR = "/data"
   STATIC_DIR = "/app/public"
-  BOT_DELAY_MS = "1000"
+  BOT_DELAY_MS = "1400"
 
 [mounts]
   source = "shoalow_data"

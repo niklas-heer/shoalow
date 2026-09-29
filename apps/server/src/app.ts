@@ -1,6 +1,12 @@
 import { mkdirSync } from "node:fs";
 import { join, normalize, resolve } from "node:path";
-import { type ClientMessage, type GameEvent, parseClientMessage, type ServerMessage } from "@shoalow/game";
+import {
+  BOT_SPEED_FACTOR,
+  type ClientMessage,
+  type GameEvent,
+  parseClientMessage,
+  type ServerMessage,
+} from "@shoalow/game";
 import type { Server, ServerWebSocket } from "bun";
 import { Room } from "./room.ts";
 import { Store } from "./store.ts";
@@ -11,7 +17,7 @@ export interface ServerOptions {
   dataDir: string;
   /** Built web client to serve; omitted in development, where Vite serves it. */
   staticDir?: string;
-  /** Pause before each bot move, so humans can follow along. */
+  /** Pause before each bot move at normal speed, so humans can follow along. */
   botDelayMs?: number;
 }
 
@@ -48,7 +54,7 @@ async function readName(req: Request): Promise<unknown> {
 export function createServer(options: ServerOptions) {
   mkdirSync(options.dataDir, { recursive: true });
   const store = new Store(join(options.dataDir, "shoalow.sqlite"));
-  const botDelayMs = options.botDelayMs ?? 1000;
+  const botDelayMs = options.botDelayMs ?? 1400;
   const rooms = new Map<string, Room>();
   const sockets = new Map<string, Set<Socket>>();
   const botTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -87,6 +93,7 @@ export function createServer(options: ServerOptions) {
   function scheduleBots(room: Room): void {
     if (botTimers.has(room.code) || room.pendingBot() === null) return;
     const opening = room.snap.game?.phase === "initialFlip";
+    const delay = botDelayMs * BOT_SPEED_FACTOR[room.botSpeed];
     const timer = setTimeout(
       () => {
         botTimers.delete(room.code);
@@ -101,7 +108,7 @@ export function createServer(options: ServerOptions) {
         broadcast(room, step.outcome.events);
         scheduleBots(room);
       },
-      opening ? botDelayMs / 3 : botDelayMs,
+      opening ? delay / 3 : delay,
     );
     botTimers.set(room.code, timer);
   }

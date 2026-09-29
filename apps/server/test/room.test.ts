@@ -55,6 +55,18 @@ test("only the lobby allows seat and setting changes", () => {
   expect(room.snap.gameNumber).toBe(1);
 });
 
+test("the host can change the bot speed at any time, and old snapshots default to normal", () => {
+  const { room } = lobby();
+  expect(room.botSpeed).toBe("normal");
+  expect(room.handle(1, { t: "setBotSpeed", speed: "slow" }).ok).toBe(false);
+  expect(room.handle(0, { t: "setBotSpeed", speed: "slow" }).ok).toBe(true);
+  room.handle(0, { t: "start" });
+  expect(room.handle(0, { t: "setBotSpeed", speed: "fast" }).ok).toBe(true);
+  expect(room.view(1, () => true).botSpeed).toBe("fast");
+  delete room.snap.botSpeed;
+  expect(room.view(1, () => true).botSpeed).toBe("normal");
+});
+
 test("a second press of next round or play again changes nothing", () => {
   const { room } = lobby();
   room.handle(0, { t: "start" });

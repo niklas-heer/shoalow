@@ -6,6 +6,13 @@ export const MAX_NAME_LENGTH = 20;
 export const MIN_TARGET_SCORE = 10;
 export const MAX_TARGET_SCORE = 500;
 
+/** How long bots pause before each move; the host can change it at any time. */
+export type BotSpeed = "slow" | "normal" | "fast";
+export const BOT_SPEEDS: readonly BotSpeed[] = ["slow", "normal", "fast"];
+export const DEFAULT_BOT_SPEED: BotSpeed = "normal";
+/** Multiplier on the server's base bot delay for each speed. */
+export const BOT_SPEED_FACTOR: Record<BotSpeed, number> = { slow: 1.8, normal: 1, fast: 0.45 };
+
 export interface SeatView {
   name: string;
   kind: "human" | "bot";
@@ -21,6 +28,7 @@ export interface RoomView {
   you: number;
   seats: SeatView[];
   settings: Settings;
+  botSpeed: BotSpeed;
   status: "lobby" | "playing";
   game: GameView | null;
 }
@@ -31,6 +39,7 @@ export type ClientMessage =
   | { t: "addBot"; level: BotLevel }
   | { t: "removeSeat"; seat: number }
   | { t: "setTarget"; score: number }
+  | { t: "setBotSpeed"; speed: BotSpeed }
   | { t: "start" }
   | { t: "nextRound" }
   | { t: "playAgain" }
@@ -61,6 +70,7 @@ export function cleanName(raw: unknown): string | null {
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 const isInt = (v: unknown): v is number => typeof v === "number" && Number.isInteger(v);
 const isLevel = (v: unknown): v is BotLevel => v === "easy" || v === "normal";
+const isSpeed = (v: unknown): v is BotSpeed => BOT_SPEEDS.includes(v as BotSpeed);
 
 function parseAction(raw: unknown): Action | null {
   if (!isRecord(raw)) return null;
@@ -103,6 +113,8 @@ export function parseClientMessage(text: string): ClientMessage | null {
       return isInt(raw.seat) ? { t: "removeSeat", seat: raw.seat } : null;
     case "setTarget":
       return isInt(raw.score) ? { t: "setTarget", score: raw.score } : null;
+    case "setBotSpeed":
+      return isSpeed(raw.speed) ? { t: "setBotSpeed", speed: raw.speed } : null;
     case "takeover":
       return isInt(raw.seat) && typeof raw.bot === "boolean" ? { t: "takeover", seat: raw.seat, bot: raw.bot } : null;
     default:
