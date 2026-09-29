@@ -1,0 +1,11 @@
+{
+  "name": "shoalow",
+  "private": true,
+  "type": "module",
+  "workspaces": ["packages/*", "apps/*"],
+  "devDependencies": {
+    "@biomejs/biome": "2.5.14",
+    "@types/bun": "1.4.2",
+    "typescript": "6.0.3"
+  }
+}

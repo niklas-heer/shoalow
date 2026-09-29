@@ -1,0 +1,8 @@
+{
+  "name": "@shoalow/game",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

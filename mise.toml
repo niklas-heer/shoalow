@@ -1,0 +1,62 @@
+[tools]
+bun = "1.3.14"
+
+[tasks.install]
+description = "Install dependencies"
+run = "bun install"
+
+[tasks.dev]
+description = "Run the server and the Vite dev server"
+run = "bun run --filter '@shoalow/server' --filter '@shoalow/web' dev"
+
+[tasks.test]
+description = "Run unit, simulation and server tests"
+run = "bun test packages apps/server"
+
+[tasks.typecheck]
+description = "Type-check all packages"
+run = [
+  "bunx tsc -p packages/game --noEmit",
+  "bunx tsc -p apps/server --noEmit",
+  "bun run --cwd apps/web check",
+]
+
+[tasks.lint]
+description = "Lint and check formatting"
+run = "bunx biome check ."
+
+[tasks.fmt]
+description = "Format and apply safe lint fixes"
+run = "bunx biome check --write ."
+
+[tasks.check]
+description = "Everything CI runs"
+depends = ["lint", "typecheck", "test"]
+
+[tasks.sim]
+description = "Long deterministic simulation run (SIM_GAMES, SIM_SEED)"
+env = { SIM_GAMES = "5000" }
+run = "bun test packages/game/test/simulation.test.ts --timeout 600000"
+
+[tasks.build]
+description = "Build the web client"
+run = "bun run --cwd apps/web build"
+
+[tasks.start]
+description = "Serve the built client and the game server"
+depends = ["build"]
+env = { STATIC_DIR = "apps/web/dist", DATA_DIR = ".data" }
+run = "bun apps/server/src/main.ts"
+
+[tasks.e2e]
+description = "Browser smoke test with Playwright"
+depends = ["build"]
+run = "bun run --cwd apps/web e2e"
+
+[tasks.deploy]
+description = "Deploy to Fly.io"
+run = "fly deploy"
+
+[tasks.clean]
+description = "Remove build output and local data"
+run = "rm -rf apps/web/dist .data test-results apps/web/test-results"
