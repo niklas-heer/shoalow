@@ -12,7 +12,7 @@ run = "bun run --filter '@shoalow/server' --filter '@shoalow/web' dev"
 
 [tasks.test]
 description = "Run unit, simulation and server tests"
-run = "bun test packages apps/server"
+run = "bun test packages apps/server apps/web/test"
 
 [tasks.typecheck]
 description = "Type-check all packages"

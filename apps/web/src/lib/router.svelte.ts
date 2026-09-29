@@ -1,4 +1,4 @@
-/** Minimal path router: "/" is home, "/r/CODE" is a table. */
+/** Minimal path router: "/" is home, "/r/CODE" is a table, "/learn" is the tutorial. */
 class Router {
   path = $state(location.pathname);
 
@@ -12,6 +12,10 @@ class Router {
     if (path === this.path) return;
     history.pushState(null, "", path);
     this.path = path;
+  }
+
+  get learning(): boolean {
+    return /^\/learn\/?$/.test(this.path);
   }
 
   get roomCode(): string | null {

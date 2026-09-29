@@ -1,5 +1,6 @@
 <script lang="ts">
   import { CREATURES, formatValue } from "../lib/cards.ts";
+  import { router } from "../lib/router.svelte.ts";
   import Card from "./Card.svelte";
 
   let { open = $bindable(false) }: { open?: boolean } = $props();
@@ -26,6 +27,18 @@
     </header>
 
     <p class="goal">Finish with the fewest points. Pearls are worth less than nothing; anglerfish cost you 12.</p>
+    {#if !router.learning}
+      <p class="practice">
+        Rather learn by playing?
+        <button
+          class="btn small"
+          onclick={() => {
+            dialog.close();
+            router.go("/learn");
+          }}>Start a practice game</button
+        >
+      </p>
+    {/if}
 
     <h3>Setting up</h3>
     <p>
@@ -80,6 +93,12 @@
 </dialog>
 
 <style>
+  .practice {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+  }
   dialog {
     width: min(40rem, 94vw);
     max-height: 90dvh;

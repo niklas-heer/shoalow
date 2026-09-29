@@ -74,7 +74,10 @@
 
   {#if error}<p class="error" role="alert">{error}</p>{/if}
 
-  <button class="btn quiet" onclick={onrules}>How to play</button>
+  <div class="learn">
+    <button class="btn" onclick={() => router.go("/learn")}>Learn with a practice game</button>
+    <button class="btn quiet" onclick={onrules}>Read the rules</button>
+  </div>
 </main>
 
 <style>
@@ -140,6 +143,12 @@
   .code {
     text-transform: uppercase;
     letter-spacing: 0.2em;
+  }
+  .learn {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
   }
   .error {
     margin: 0;

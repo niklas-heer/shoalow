@@ -63,3 +63,21 @@ test("two players and a bot play a full round in the browser", async ({ browser 
   await expect(guest.locator(".prompt")).toHaveText("Reveal two of your cards");
   expect(errors).toEqual([]);
 });
+
+test("the practice game coaches a new player through the opening", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto("/");
+  await page.getByRole("button", { name: "Learn with a practice game" }).click();
+  await page.getByRole("button", { name: "Start the practice game" }).click();
+  await expect(page.locator(".coach .title")).toHaveText("Peek at two cards");
+
+  const mine = page.locator("section.mine button.card.selectable");
+  await mine.first().click();
+  await expect(page.locator(".coach .title")).toHaveText("One more");
+  await mine.first().click();
+
+  // Once both sides have revealed, someone's turn starts and the coach follows it.
+  await expect(page.locator(".coach .title")).toHaveText(/Take the 0|Kelp's turn/, { timeout: 10_000 });
+  expect(errors).toEqual([]);
+});
