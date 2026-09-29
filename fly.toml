@@ -1,0 +1,41 @@
+# Fly.io app for Shoalow. Game state lives in SQLite on the volume, so run exactly one machine.
+app = "shoalow"
+primary_region = "fra"
+kill_signal = "SIGTERM"
+kill_timeout = "10s"
+
+[env]
+  PORT = "8080"
+  DATA_DIR = "/data"
+  STATIC_DIR = "/app/public"
+  BOT_DELAY_MS = "1000"
+
+[mounts]
+  source = "shoalow_data"
+  destination = "/data"
+  initial_size = "1gb"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # Stop the machine when nobody is connected; wake it on the next request.
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  # Count open connections (WebSockets included), so a running game keeps the machine awake.
+  [http_service.concurrency]
+    type = "connections"
+    soft_limit = 400
+    hard_limit = 500
+
+  [[http_service.checks]]
+    grace_period = "5s"
+    interval = "30s"
+    timeout = "3s"
+    method = "GET"
+    path = "/healthz"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

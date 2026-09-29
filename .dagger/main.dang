@@ -1,0 +1,71 @@
+"""
+Reproducible Linux checks for Shoalow: lint, strict type checks, rules, simulation
+and server tests, and a browser test where two players and a bot play a round.
+"""
+type ShoalowCi {
+  pub source: Directory! @defaultPath("/") @ignorePatterns([
+    "**/node_modules", "**/dist", "**/test-results", "**/playwright-report",
+    ".git", ".data", ".superpowers", "**/*.sqlite*",
+  ])
+
+  let bunImage: String! {
+    "oven/bun:1.3.14@sha256:e10577f0db68676a7024391c6e5cb4b879ebd17188ab750cf10024a6d700e5c4"
+  }
+
+  """
+  Install locked dependencies before copying the rest of the source, so edits keep the install layer cached.
+  """
+  let withWorkspace(base: Container!): Container! {
+    base
+      .withWorkdir("/src")
+      .withMountedCache("/root/.bun/install/cache", cacheVolume("shoalow-bun-install-1.3.14"))
+      .withFile("package.json", source.file("package.json"))
+      .withFile("bun.lock", source.file("bun.lock"))
+      .withFile("packages/game/package.json", source.file("packages/game/package.json"))
+      .withFile("apps/server/package.json", source.file("apps/server/package.json"))
+      .withFile("apps/web/package.json", source.file("apps/web/package.json"))
+      .withExec(["bun", "install", "--frozen-lockfile", "--ignore-scripts"])
+      .withDirectory("/src", source)
+  }
+
+  """
+  Biome, TypeScript and svelte-check, then the rules, simulation, room and server tests.
+  """
+  pub tests: String! {
+    withWorkspace(container.from(bunImage))
+      .withExec(["bunx", "biome", "ci", "."])
+      .withExec(["bunx", "tsc", "-p", "packages/game", "--noEmit"])
+      .withExec(["bunx", "tsc", "-p", "apps/server", "--noEmit"])
+      .withExec(["bun", "run", "--cwd", "apps/web", "check"])
+      .withExec(["bun", "test", "packages", "apps/server"])
+      .stdout
+  }
+
+  """
+  Build the client and play a round in Chromium with Playwright.
+  """
+  pub browser: String! {
+    let playwright = container
+      .from("mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27")
+      .withFile("/usr/local/bin/bun", container.from(bunImage).file("/usr/local/bin/bun"))
+      .withExec(["ln", "-s", "/usr/local/bin/bun", "/usr/local/bin/bunx"])
+    withWorkspace(playwright)
+      .withExec(["bun", "run", "--cwd", "apps/web", "build"])
+      .withExec(["bun", "run", "--cwd", "apps/web", "e2e"])
+      .stdout
+  }
+
+  """
+  Build the production image, the same one Fly.io deploys.
+  """
+  pub image: Container! {
+    source.dockerBuild
+  }
+
+  """
+  Every check CI requires; evaluating the list makes any failing command fail the run.
+  """
+  pub check: [String!]! {
+    [tests, browser, image.withExec(["bun", "--version"]).stdout]
+  }
+}
