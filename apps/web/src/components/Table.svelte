@@ -259,7 +259,7 @@
 
 <style>
   .table {
-    --board-w: min(100%, 27rem);
+    --board-w: min(100%, 36rem);
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: "bar" "opponents" "play";
@@ -291,11 +291,11 @@
     gap: 0.15rem;
   }
   :global(.btn.small) {
-    min-height: 38px;
+    min-height: 44px;
     padding: 0.3em 0.8em;
   }
   .icon {
-    width: 40px;
+    width: 44px;
     padding: 0;
   }
   .icon svg {
@@ -381,17 +381,17 @@
   .banner {
     display: grid;
     gap: 0.15rem;
-    grid-template-rows: 4rem 2.8rem;
+    grid-template-rows: 5rem 3.2rem;
     align-items: center;
     width: min(100%, 55rem);
-    min-height: 7rem;
+    min-height: 8.5rem;
     text-align: center;
   }
   .banner p {
     margin: 0;
   }
   .prompt {
-    font-size: clamp(1.05rem, 2.3vw, 1.25rem);
+    font-size: clamp(1.15rem, 2.3vw, 1.55rem);
     font-weight: 750;
     letter-spacing: -0.01em;
   }
@@ -428,7 +428,7 @@
     width: 100%;
   }
   .field :global(.piles) {
-    --pile-w: 4.6rem;
+    --pile-w: clamp(5.2rem, 23vw, 6rem);
   }
   .mine {
     display: grid;
@@ -442,20 +442,24 @@
     display: flex;
     align-items: baseline;
     gap: 1rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 12px;
+    background: rgb(127 216 200 / 0.08);
   }
-  .board-hint { margin: 0; min-height: 2.6rem; display: grid; align-items: center; color: var(--mist); font-size: 0.85rem; text-align: center; }
+  .board-hint { margin: 0; min-height: 3.2rem; display: grid; align-items: center; color: var(--mist); font-size: 1rem; text-align: center; }
   .board-hint.active { color: var(--lantern); }
   .mine-head .name {
     flex: 1;
-    font-size: 1.2rem;
+    font-size: 1.4rem;
     font-weight: 800;
   }
   .stat {
     color: var(--mist);
+    font-size: 0.95rem;
   }
   .stat strong {
     color: var(--foam);
-    font-size: 1.2rem;
+    font-size: 1.4rem;
     font-variant-numeric: tabular-nums;
   }
 
@@ -485,7 +489,6 @@
 
   @media (min-width: 1000px) {
     .table {
-      --board-w: clamp(15rem, calc((100svh - 29rem) / 1.08), 27rem);
       grid-template-columns: minmax(0, 1fr) 19rem;
       grid-template-areas:
         "bar bar"
@@ -513,7 +516,7 @@
       display: none;
     }
     .field :global(.piles) {
-      --pile-w: 5.2rem;
+      --pile-w: 7rem;
     }
   }
 
@@ -524,18 +527,17 @@
   }
 
   @media (min-width: 1240px) {
-    /* Everything above the grid: bar, opponents, banner, the grid's own header, and breathing room. */
-    .table {
-      --board-w: clamp(15rem, calc((100svh - 22rem) / 1.08), 27rem);
-    }
     .field {
-      grid-template-columns: minmax(0, 20rem) auto;
+      grid-template-columns: minmax(14rem, 23rem) minmax(0, 36rem);
       justify-content: center;
       align-items: start;
-      column-gap: 2.5rem;
+      column-gap: 2rem;
     }
     .left {
       justify-items: stretch;
+    }
+    .mine {
+      width: 100%;
     }
     .left :global(.piles) {
       justify-content: start;

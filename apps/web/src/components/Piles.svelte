@@ -70,7 +70,7 @@
   }
   .pile {
     display: grid;
-    grid-template-rows: auto 3.2rem;
+    grid-template-rows: auto 4.6rem;
     gap: 0.35rem;
     margin: 0;
     text-align: center;
@@ -80,11 +80,11 @@
     display: grid;
     align-content: start;
     gap: 0.15rem;
-    font-size: 0.78rem;
+    font-size: clamp(0.9rem, 1.1vw, 1.05rem);
     font-weight: 600;
   }
   figcaption strong { color: var(--foam); font-weight: 700; }
-  figcaption span { font-size: 0.67rem; }
+  figcaption span { font-size: 0.8rem; }
   .stack {
     position: relative;
     filter: drop-shadow(3px 3px 0 #0c3448) drop-shadow(3px 3px 0 #0a2d3e);
@@ -109,7 +109,7 @@
     aspect-ratio: 5 / 7;
     width: 100%;
   }
-  .hand-empty { position: absolute; inset: 0; display: grid; place-items: center; border: 1px dashed rgb(127 216 200 / 0.22); border-radius: 9%/6.5%; color: var(--mist); font-size: 0.78rem; }
+  .hand-empty { position: absolute; inset: 0; display: grid; place-items: center; border: 1px dashed rgb(127 216 200 / 0.22); border-radius: 9%/6.5%; color: var(--mist); font-size: 0.95rem; }
   .held {
     position: absolute;
     inset: 0;

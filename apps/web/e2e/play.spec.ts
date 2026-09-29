@@ -124,7 +124,7 @@ test("choose a goal, stop the game, restart and exit with a bot taking over", as
   expect(gone.status()).toBe(404);
 });
 
-for (const width of [1440, 390]) {
+for (const width of [1440, 1240, 1000, 390]) {
   test(`cards and piles keep their geometry through reveals and draws at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/learn");
@@ -145,6 +145,8 @@ for (const width of [1440, 390]) {
         ),
       );
     const before = await geometry();
+    expect(before[1]?.width, "player cards stay readable").toBeGreaterThanOrEqual(width === 1440 ? 120 : 75);
+    expect(before[2]?.width, "pile cards stay readable").toBeGreaterThanOrEqual(width >= 1000 ? 100 : 80);
     await firstCard.click();
     await expect(page.locator(".prompt")).toHaveText("Reveal one more card");
     await board.locator("button.card.selectable").first().click();
