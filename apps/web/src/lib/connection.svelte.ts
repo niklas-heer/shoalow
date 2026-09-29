@@ -11,10 +11,12 @@ export interface TableLink {
 const PING_MS = 25_000;
 const HIDDEN_DISCONNECT_MS = 10 * 60_000;
 const MAX_BACKOFF_MS = 8_000;
+const WAKE_CHECK_MS = 4_000;
 
 /**
  * One live seat at a table. Reconnects on its own, sends a heartbeat, and lets go of
  * the socket when the tab has been hidden for a while so an idle Fly machine can stop.
+ * Phones freeze pages while locked, so coming back checks the line straight away.
  */
 export class Connection implements TableLink {
   room = $state<RoomView | null>(null);
@@ -29,6 +31,8 @@ export class Connection implements TableLink {
   private retry: ReturnType<typeof setTimeout> | undefined;
   private hiddenTimer: ReturnType<typeof setTimeout> | undefined;
   private errorTimer: ReturnType<typeof setTimeout> | undefined;
+  private wakeTimer: ReturnType<typeof setTimeout> | undefined;
+  private lastHeard = 0;
   private attempts = 0;
   private closed = false;
 
@@ -37,6 +41,8 @@ export class Connection implements TableLink {
     readonly token: string,
   ) {
     document.addEventListener("visibilitychange", this.onVisibility);
+    addEventListener("pageshow", this.wake);
+    addEventListener("online", this.wake);
     this.connect();
   }
 
@@ -53,7 +59,10 @@ export class Connection implements TableLink {
       clearInterval(this.ping);
       this.ping = setInterval(() => this.send({ t: "ping" }), PING_MS);
     };
-    ws.onmessage = (e) => this.receive(JSON.parse(String(e.data)) as ServerMessage);
+    ws.onmessage = (e) => {
+      this.lastHeard = Date.now();
+      this.receive(JSON.parse(String(e.data)) as ServerMessage);
+    };
     let opened = false;
     ws.addEventListener("open", () => {
       opened = true;
@@ -121,18 +130,56 @@ export class Connection implements TableLink {
         this.status = "paused";
         this.ws?.close(1000, "tab hidden");
       }, HIDDEN_DISCONNECT_MS);
-    } else if (this.status === "paused" && !this.closed) {
-      this.status = "connecting";
-      this.connect();
+    } else {
+      this.wake();
     }
   };
+
+  /**
+   * Back from a locked phone, a background tab or a lost network. A socket can still look
+   * open after the server dropped it, so an open one must answer a ping in a few seconds.
+   */
+  private wake = (): void => {
+    if (this.closed || this.removed) return;
+    const ws = this.ws;
+    if (ws?.readyState === WebSocket.CONNECTING) return;
+    if (ws?.readyState !== WebSocket.OPEN) {
+      this.reconnectNow();
+      return;
+    }
+    const asked = Date.now();
+    ws.send(JSON.stringify({ t: "ping" } satisfies ClientMessage));
+    clearTimeout(this.wakeTimer);
+    this.wakeTimer = setTimeout(() => {
+      if (this.ws === ws && this.lastHeard < asked) this.reconnectNow();
+    }, WAKE_CHECK_MS);
+  };
+
+  /** Drops the current socket, if any, and connects again without waiting for a backoff. */
+  private reconnectNow(): void {
+    const old = this.ws;
+    this.ws = null;
+    if (old) {
+      // Its close event would arrive after the new socket opens and stop the new heartbeat.
+      old.onclose = null;
+      old.onmessage = null;
+      old.close();
+    }
+    clearInterval(this.ping);
+    this.attempts = 0;
+    this.status = this.status === "paused" || !this.room ? "connecting" : "reconnecting";
+    this.connect();
+  }
 
   close(): void {
     this.closed = true;
     clearInterval(this.ping);
     clearTimeout(this.retry);
     clearTimeout(this.hiddenTimer);
+    clearTimeout(this.wakeTimer);
     document.removeEventListener("visibilitychange", this.onVisibility);
+    removeEventListener("pageshow", this.wake);
+    removeEventListener("online", this.wake);
     this.ws?.close(1000, "bye");
     this.ws = null;
   }

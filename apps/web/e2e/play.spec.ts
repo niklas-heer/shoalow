@@ -193,3 +193,30 @@ for (const width of [1440, 1240, 1000, 390]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   });
 }
+
+test("a table reconnects straight away when a phone wakes up with a dead connection", async ({ page }) => {
+  // Each socket can be cut off silently, like one a locked phone left behind.
+  const live: boolean[] = [];
+  await page.routeWebSocket(/\/ws\?/, (ws) => {
+    const i = live.push(true) - 1;
+    const server = ws.connectToServer();
+    ws.onMessage((m) => {
+      if (live[i]) server.send(m);
+    });
+    server.onMessage((m) => {
+      if (live[i]) ws.send(m);
+    });
+  });
+  await page.goto("/");
+  await page.getByLabel("Your name").fill("Anna");
+  await page.getByRole("button", { name: "Create a table" }).click();
+  await expect(page.locator(".seats li")).toHaveCount(1);
+  expect(live).toHaveLength(1);
+
+  live[0] = false;
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  await expect.poll(() => live.length, { timeout: 8_000 }).toBe(2);
+
+  await page.getByRole("button", { name: "Add normal bot" }).click();
+  await expect(page.locator(".seats li")).toHaveCount(2);
+});

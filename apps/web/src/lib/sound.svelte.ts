@@ -4,7 +4,9 @@ const KEY = "shoalow.sound";
 
 /**
  * Small synthesized sounds for table events: no audio files, nothing to license.
- * Browsers only allow audio after a user gesture, so the context starts on the first tap.
+ * Browsers only allow audio after a user gesture, so the context starts on a tap. Safari on
+ * iPhone and iPad only counts a finished tap, and suspends audio again when the phone locks,
+ * so every tap resumes the context if it is not running.
  */
 class Sound {
   enabled = $state(typeof localStorage === "undefined" || localStorage.getItem(KEY) !== "off");
@@ -14,12 +16,11 @@ class Sound {
   constructor() {
     if (typeof window === "undefined") return;
     const unlock = () => {
-      this.context()?.resume();
-      removeEventListener("pointerdown", unlock);
-      removeEventListener("keydown", unlock);
+      const ctx = this.context();
+      if (ctx && ctx.state !== "running") void ctx.resume();
     };
-    addEventListener("pointerdown", unlock);
-    addEventListener("keydown", unlock);
+    for (const type of ["pointerdown", "pointerup", "touchend", "click", "keydown"])
+      addEventListener(type, unlock, { passive: true });
   }
 
   toggle(): void {
