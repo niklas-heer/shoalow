@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@fontsource-variable/bricolage-grotesque": "5.3.0",
+    "@lucide/svelte": "1.49.0",
     "@shoalow/game": "workspace:*"
   },
   "devDependencies": {

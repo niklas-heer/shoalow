@@ -16,6 +16,7 @@
   import SeatDialog from "./SeatDialog.svelte";
   import Standings from "./Standings.svelte";
   import Trophy from "./Trophy.svelte";
+  import TurnSteps from "./TurnSteps.svelte";
 
   let {
     room,
@@ -237,6 +238,8 @@
       {/if}
     </div>
 
+    <div class="turn-steps"><TurnSteps {game} who={holder} mine={game.current === me} /></div>
+
     {#if coach}<div class="coach">{@render coach()}</div>{/if}
 
     <div class="left">
@@ -261,9 +264,7 @@
       </div>
       <p class="board-hint" class:active={banner.yours}>
         {#if game.phase === "initialFlip" && myBoard.initialFlips < 2}{myBoard.initialFlips === 0 ? "Tap any two cards to reveal" : "Tap one more card to reveal"}
-        {:else if myTurn && game.stage === "mustFlip"}Tap a face-down card to reveal it
-        {:else if myTurn && (game.stage === "drawn" || game.stage === "fromDiscard")}Tap a card below to swap in your {game.hand}
-        {:else}Match three in a column to clear them{/if}
+        {:else if game.phase !== "turn"}Match three in a column to clear them{/if}
       </p>
       <Board
         board={myBoard}
@@ -307,10 +308,11 @@
    */
   .table {
     --card-gap: clamp(6px, 1.6vw, 10px);
+    --head-h: 2.5rem;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: auto auto auto minmax(15rem, 1fr);
-    grid-template-areas: "bar bar" "opponents opponents" "banner left" "mine mine";
+    grid-template-rows: auto auto auto auto minmax(15rem, 1fr);
+    grid-template-areas: "bar bar" "opponents opponents" "banner left" "steps steps" "mine mine";
     gap: 0.6rem 0.75rem;
     max-width: 100rem;
     min-height: calc(100dvh - env(safe-area-inset-top));
@@ -323,7 +325,7 @@
   /* The practice game has a single opponent, so on phones the coach sits beside it. */
   .table.coached {
     grid-template-columns: minmax(0, 1fr) auto 6.5rem;
-    grid-template-areas: "bar bar bar" "coach coach opponents" "banner left left" "mine mine mine";
+    grid-template-areas: "bar bar bar" "coach coach opponents" "banner left left" "steps steps steps" "mine mine mine";
   }
   .bar {
     grid-area: bar;
@@ -504,6 +506,13 @@
     gap: 0.5rem;
     min-width: 0;
   }
+  /* Phones give the steps their own row above your cards: a fixed height, so nothing moves. */
+  .turn-steps {
+    --steps-justify: center;
+    grid-area: steps;
+    align-self: start;
+    min-width: 0;
+  }
   .left {
     grid-area: left;
     align-self: center;
@@ -516,7 +525,6 @@
 
   /* Your grid is as large as the space below the head allows, in both directions. */
   .mine {
-    --head-h: 2.5rem;
     --above: calc(var(--head-h) + 0.4rem);
     --board-w: min(
       100cqw,
@@ -610,11 +618,12 @@
     .table,
     .table.coached {
       grid-template-columns: minmax(0, 1fr) auto minmax(0, 0.9fr);
-      grid-template-rows: auto auto auto 1fr;
+      grid-template-rows: auto auto auto auto 1fr;
       grid-template-areas:
         "bar bar mine"
         "opponents opponents mine"
         "banner left mine"
+        "steps left mine"
         ". . mine";
       column-gap: 1rem;
     }
@@ -623,10 +632,14 @@
         "bar bar mine"
         "coach opponents mine"
         "banner left mine"
+        "steps left mine"
         ". . mine";
     }
     .sub {
       display: none;
+    }
+    .turn-steps {
+      --steps-justify: start;
     }
     .left :global(.piles) {
       --pile-w: min(4.2rem, 16dvh);
@@ -645,6 +658,7 @@
         "banner banner"
         "coach mine"
         "left mine";
+      --head-h: 3rem;
       justify-content: center;
       gap: 0.9rem 1.5rem;
       padding-top: 0.5rem;
@@ -695,7 +709,6 @@
     }
     .mine {
       justify-items: start;
-      --head-h: 3rem;
       --above: calc(var(--head-h) + 2rem + 0.8rem);
     }
     .mine-head .name {
@@ -709,6 +722,15 @@
     }
     .board-hint {
       display: flex;
+    }
+    /* During turns the steps take the hint's row above your cards, so they cost no height. */
+    .turn-steps {
+      --steps-justify: start;
+      grid-area: mine;
+      display: flex;
+      align-items: center;
+      height: 2rem;
+      margin-top: calc(var(--head-h) + 0.4rem);
     }
   }
 

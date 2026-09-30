@@ -150,6 +150,42 @@ test("the table shows where you can play and previews a swap under the mouse", a
   await expect(page.locator(".preview")).toHaveCount(0);
 });
 
+test("the turn steps follow each step of a turn", async ({ page }) => {
+  await page.goto("/learn");
+  await page.getByRole("button", { name: "Start the practice game" }).click();
+  const steps = page.locator(".turn-steps .steps");
+  const current = steps.locator('li[aria-current="step"]');
+  const step = (name: string) => steps.locator("li", { hasText: name });
+  await expect(steps).toBeHidden();
+
+  const mine = page.locator("section.mine button.card.selectable");
+  await mine.first().click();
+  await mine.first().click();
+  await expect(page.locator(".prompt")).toHaveText(/^Draw from the pile or take the \d+$/, { timeout: 10_000 });
+  await expect(steps).toContainText("Your turn");
+  await expect(current).toHaveText(/Draw/);
+  await expect(step("Reveal")).toHaveClass(/optional/);
+
+  // A card taken from the discard pile must go into the grid, so there is nothing to reveal.
+  await page.getByRole("button", { name: /^Discard pile/ }).click();
+  await expect(current).toHaveText(/Place/);
+  await expect(step("Draw")).toHaveClass(/done/);
+  await expect(step("Reveal")).toHaveClass(/skipped/);
+
+  await mine.first().click();
+  await expect(steps).toContainText("Kelp's turn");
+  await expect(current).toHaveText(/Draw|Place|Reveal/);
+  await expect(page.locator(".prompt")).toHaveText(/^Draw from the pile or take the \d+$/, { timeout: 10_000 });
+
+  // A drawn card that is dropped leads on to revealing one of your own.
+  await page.getByRole("button", { name: /Draw pile/ }).click();
+  await expect(current).toHaveText(/Place/);
+  await expect(step("Reveal")).toHaveClass(/optional/);
+  await page.getByRole("button", { name: /Discard pile, drop your card here/ }).click();
+  await expect(current).toHaveText(/Reveal/);
+  await expect(steps.locator("li.done")).toHaveCount(2);
+});
+
 test("a finished game throws confetti and puts a trophy beside the winner", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -268,7 +304,7 @@ for (const width of [1440, 1240, 1000, 390]) {
     await deck.click();
     await expect(page.locator(".prompt")).toHaveText("Swap it into your grid, or drop it on the discard pile");
     await assertStable();
-    await expect(page.locator(".board-hint")).toContainText("Tap a card below to swap");
+    await expect(page.locator('.turn-steps li[aria-current="step"]')).toHaveText(/Place/);
     await page.getByRole("button", { name: /Discard pile, drop your card here/ }).click();
     await expect(page.locator(".prompt")).toHaveText("Reveal one of your face-down cards");
     await assertStable();

@@ -41,5 +41,22 @@ test("a practice round fits the screen and shows the faces of turned cards", asy
   await expect(page.locator(".prompt")).toHaveText("Swap it into your grid, or drop it on the discard pile");
   await expect(page.locator('[data-anchor="hand"] .card .front > svg')).toBeVisible();
   await expectOnScreen(page);
+
+  // The turn steps are on screen and clear of the piles.
+  const steps = await page.locator(".turn-steps ol").boundingBox();
+  expect(steps).not.toBeNull();
+  const viewport = page.viewportSize();
+  expect((steps?.x ?? 0) + (steps?.width ?? 0)).toBeLessThanOrEqual(viewport?.width ?? 0);
+  for (const pile of ['[data-anchor="deck"]', '[data-anchor="discard"]']) {
+    const box = await page.locator(pile).boundingBox();
+    const apart =
+      !steps ||
+      !box ||
+      steps.x + steps.width <= box.x ||
+      box.x + box.width <= steps.x ||
+      steps.y + steps.height <= box.y ||
+      box.y + box.height <= steps.y;
+    expect(apart, `turn steps overlap ${pile}`).toBe(true);
+  }
   expect(errors).toEqual([]);
 });
