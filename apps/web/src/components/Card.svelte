@@ -190,12 +190,12 @@
   @keyframes pulse {
     50% {
       opacity: 1;
-      scale: 1.025;
+      scale: 1.012;
     }
   }
   @keyframes breathe {
     50% {
-      scale: 1.025;
+      scale: 1.012;
     }
   }
   @media (prefers-reduced-motion: reduce) {

@@ -168,7 +168,7 @@
   @keyframes pulse {
     50% {
       box-shadow: 0 0 18px 4px rgb(255 226 122 / 0.45);
-      scale: 1.025;
+      scale: 1.012;
     }
   }
   @media (prefers-reduced-motion: reduce) {
