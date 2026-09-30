@@ -1,9 +1,12 @@
-import type { GameEvent, RoomView } from "@shoalow/game";
+import type { GameEvent, GameView, RoomView } from "@shoalow/game";
 import { formatValue } from "./cards.ts";
 
 export function seatName(room: RoomView, seat: number): string {
   return seat === room.you ? "You" : (room.seats[seat]?.name ?? "Someone");
 }
+
+/** Whether a seat won the finished game; a shared lowest total gives everyone on it the win. */
+export const won = (game: GameView, seat: number): boolean => game.phase === "gameOver" && game.winners.includes(seat);
 
 const article = (v: number) => (v === 8 || v === 11 ? "an" : "a");
 const card = (v: number) => `${article(v)} ${formatValue(v)}`;

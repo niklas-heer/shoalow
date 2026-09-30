@@ -3,7 +3,9 @@
   import { onMount } from "svelte";
   import { formatValue } from "../lib/cards.ts";
   import type { TableLink } from "../lib/connection.svelte.ts";
+  import { won } from "../lib/describe.ts";
   import Board from "./Board.svelte";
+  import Trophy from "./Trophy.svelte";
 
   let { room, conn, seat, onclose }: { room: RoomView; conn: TableLink; seat: number; onclose: () => void } = $props();
 
@@ -20,7 +22,7 @@
   {#if info && board && room.game}
     <div class="inner">
       <header>
-        <h2>{info.name}</h2>
+        <h2>{info.name}{#if won(room.game, seat)}<Trophy />{/if}</h2>
         <button class="btn quiet small" onclick={() => dialog.close()}>Close</button>
       </header>
       <p class="stats">

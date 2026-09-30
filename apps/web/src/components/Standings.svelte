@@ -3,8 +3,10 @@
   import { flip } from "svelte/animate";
   import { formatValue } from "../lib/cards.ts";
   import type { TableLink } from "../lib/connection.svelte.ts";
+  import { won } from "../lib/describe.ts";
   import { motion } from "../lib/motion.ts";
   import BotSpeed from "./BotSpeed.svelte";
+  import Trophy from "./Trophy.svelte";
 
   let { room, link, onrounds }: { room: RoomView; link: TableLink; onrounds: () => void } = $props();
 
@@ -35,7 +37,9 @@
           class:leader={game.rounds.length > 0 && game.totals[p] === low}
         >
           <span class="rank">{rank + 1}</span>
-          <span class="name">{p === room.you ? "You" : seat?.name}</span>
+          <span class="name"
+            ><span class="text">{p === room.you ? "You" : seat?.name}</span>{#if won(game, p)}<Trophy />{/if}</span
+          >
           <span class="now" title="Face-up cards this round">{playing ? formatValue(game.boards[p]?.visibleSum ?? 0) : ""}</span>
           <span class="total">{formatValue(game.totals[p] ?? 0)}</span>
         </li>
@@ -122,10 +126,15 @@
     font-weight: 700;
   }
   .name {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    font-weight: 700;
+  }
+  .name .text {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-weight: 700;
   }
   .now {
     color: var(--mist);

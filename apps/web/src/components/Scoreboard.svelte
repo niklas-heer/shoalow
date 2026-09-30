@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { RoomView } from "@shoalow/game";
   import { formatValue } from "../lib/cards.ts";
+  import { won } from "../lib/describe.ts";
+  import Trophy from "./Trophy.svelte";
 
   let { room }: { room: RoomView } = $props();
 
@@ -24,7 +26,9 @@
       <tbody>
         {#each room.seats as seat, p}
           <tr class:me={p === room.you}>
-            <th scope="row">{p === room.you ? "You" : seat.name}</th>
+            <th scope="row">
+              <span class="who"><span class="text">{p === room.you ? "You" : seat.name}</span>{#if won(game, p)}<Trophy />{/if}</span>
+            </th>
             {#each game.rounds as round}
               <td class:ender={round.endedBy === p}>
                 {formatValue(round.scores[p] ?? 0)}{#if round.doubled === p}<span class="x2">×2</span>{/if}
@@ -78,6 +82,16 @@
   }
   tbody th {
     font-weight: 700;
+  }
+  .who {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    vertical-align: bottom;
+  }
+  .who .text {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   tr.me th {
     color: var(--glass);

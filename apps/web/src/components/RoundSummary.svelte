@@ -3,8 +3,10 @@
   import { fly } from "svelte/transition";
   import { formatValue } from "../lib/cards.ts";
   import type { TableLink } from "../lib/connection.svelte.ts";
+  import { won } from "../lib/describe.ts";
   import { motion } from "../lib/motion.ts";
   import Board from "./Board.svelte";
+  import Trophy from "./Trophy.svelte";
 
   let { room, conn, onhide }: { room: RoomView; conn: TableLink; onhide: () => void } = $props();
 
@@ -55,7 +57,7 @@
           {@const board = game.boards[p]}
           <li class:me={p === room.you} class:winner={over && game.winners.includes(p)}>
             <span class="rank">{rank + 1}</span>
-            <span class="who">{name(p)}</span>
+            <span class="who"><span class="text">{name(p)}</span>{#if won(game, p)}<Trophy />{/if}</span>
             {#if board}<span class="mini"><Board {board} size="sm" owner={name(p)} /></span>{/if}
             <span class="round">
               {formatValue(result.scores[p] ?? 0)}{#if result.doubled === p}<span class="x2">×2</span>{/if}
@@ -133,10 +135,15 @@
     font-weight: 700;
   }
   .who {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    font-weight: 700;
+  }
+  .who .text {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-weight: 700;
   }
   .mini {
     width: 4.2rem;

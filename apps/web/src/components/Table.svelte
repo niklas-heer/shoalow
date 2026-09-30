@@ -2,8 +2,9 @@
   import type { Action, GameEvent, RoomView } from "@shoalow/game";
   import { onMount, type Snippet, untrack } from "svelte";
   import { formatValue } from "../lib/cards.ts";
+  import { confetti } from "../lib/confetti.ts";
   import type { TableLink } from "../lib/connection.svelte.ts";
-  import { lastMove, prompt, seatName } from "../lib/describe.ts";
+  import { lastMove, prompt, seatName, won } from "../lib/describe.ts";
   import { playFlights } from "../lib/flights.ts";
   import { motion } from "../lib/motion.ts";
   import { sound } from "../lib/sound.svelte.ts";
@@ -14,6 +15,7 @@
   import RoundsDialog from "./RoundsDialog.svelte";
   import SeatDialog from "./SeatDialog.svelte";
   import Standings from "./Standings.svelte";
+  import Trophy from "./Trophy.svelte";
 
   let {
     room,
@@ -57,6 +59,7 @@
     untrack(() => {
       playFlights(list);
       sound.play(list, me);
+      if (list.some((e) => e.type === "gameOver")) confetti();
     });
   });
 
@@ -198,10 +201,11 @@
               class:current={game.phase === "turn" && game.current === p}
               class:away={seat.kind === "human" && !seat.connected && !seat.takenOver}
               onclick={() => (focused = p)}
-              aria-label="{seat.name}, {board.visibleSum} showing, {game.totals[p]} total. Show larger"
+              aria-label="{seat.name}{won(game, p) ? ', winner' : ''}, {board.visibleSum} showing, {game.totals[p]} total. Show larger"
             >
               <span class="who">
                 <span class="name">{seat.name}</span>
+                {#if won(game, p)}<Trophy />{/if}
                 <span class="sum">{formatValue(board.visibleSum)}</span>
               </span>
               <Board
@@ -251,7 +255,7 @@
 
     <section class="mine" aria-label="Your cards">
       <div class="mine-head">
-        <span class="name">You</span>
+        <span class="name">You{#if won(game, me)}<Trophy />{/if}</span>
         <span class="stat"><strong>{formatValue(myBoard.visibleSum)}</strong> showing</span>
         <span class="stat"><strong>{formatValue(game.totals[me] ?? 0)}</strong> total</span>
       </div>
@@ -420,8 +424,7 @@
   }
   .who {
     display: flex;
-    justify-content: space-between;
-    gap: 0.3rem;
+    align-items: center;
     font-size: 0.85rem;
     font-weight: 700;
   }
@@ -434,6 +437,8 @@
     white-space: nowrap;
   }
   .who .sum {
+    margin-left: auto;
+    padding-left: 0.3rem;
     font-variant-numeric: tabular-nums;
   }
   .sub {

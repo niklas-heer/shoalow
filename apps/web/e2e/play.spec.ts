@@ -144,6 +144,40 @@ test("the table shows where you can play and previews a swap under the mouse", a
   await expect(page.locator(".preview")).toHaveCount(0);
 });
 
+test("a finished game throws confetti and puts a trophy beside the winner", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto("/");
+  await page.getByLabel("Your name").fill("Anna");
+  await page.getByLabel("Game goal").fill("10");
+  await page.getByRole("button", { name: "Create a table" }).click();
+  await page.getByRole("button", { name: "Add normal bot" }).click();
+  await page.getByRole("button", { name: "Start with 2 players" }).click();
+
+  const final = page.getByRole("heading", { name: /wins? with|share the win/ });
+  for (let i = 0; i < 2000 && !(await final.isVisible()); i++) {
+    const next = page.getByRole("button", { name: /^Start round \d+$/ });
+    if (await next.isVisible()) await next.click();
+    else if (!(await step(page))) await page.waitForTimeout(50);
+  }
+  await expect(final).toBeVisible();
+  await expect(page.locator("canvas.confetti")).toBeAttached();
+
+  const winners = page.locator(".rows li.winner");
+  expect(await winners.count()).toBeGreaterThan(0);
+  await expect(winners.getByRole("img", { name: "winner" })).toHaveCount(await winners.count());
+  await expect(page.locator(".rows li:not(.winner)").getByRole("img", { name: "winner" })).toHaveCount(0);
+  await expect(page.locator("canvas.confetti")).not.toBeAttached({ timeout: 6_000 });
+
+  // A reload shows the result again, with the trophies but without a second burst.
+  await page.reload();
+  await expect(final).toBeVisible();
+  await expect(winners.getByRole("img", { name: "winner" })).toHaveCount(await winners.count());
+  await page.waitForTimeout(300);
+  await expect(page.locator("canvas.confetti")).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
 test("choose a goal, stop the game, restart and exit with a bot taking over", async ({ browser }) => {
   const host = await (await browser.newContext()).newPage();
   const guest = await (await browser.newContext()).newPage();
