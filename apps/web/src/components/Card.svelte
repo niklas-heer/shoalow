@@ -148,21 +148,31 @@
   }
   .selectable {
     cursor: pointer;
-    border-radius: 9%/6.5%;
+  }
+  .selectable:focus-visible {
+    outline: none;
+  }
+  /* The ring around a card you can play, drawn outside the card so it can grow with it. */
+  .selectable::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
     box-shadow:
       0 0 0 2px var(--lantern),
       0 0 12px rgb(255 226 122 / 0.18);
+    pointer-events: none;
     transition: box-shadow 140ms;
   }
-  .selectable:hover,
-  .selectable:focus-visible {
-    outline: none;
+  .selectable:hover::before,
+  .selectable:focus-visible::before {
     box-shadow:
       0 0 0 3px var(--lantern),
       0 0 16px 2px rgb(255 226 122 / 0.3);
   }
-  /* Everything you can play right now breathes slowly. Only the glow's opacity changes, so the
-     pulse stays cheap with a whole grid of playable cards. */
+  /* Everything you can play right now breathes slowly: it grows a little as its glow brightens.
+     Only scale and opacity change, so the pulse stays cheap with a whole grid of playable cards,
+     and the button's own box never moves, so layout and taps stay put. */
   .selectable::after {
     content: "";
     position: absolute;
@@ -173,15 +183,29 @@
     pointer-events: none;
     animation: pulse 1.8s ease-in-out infinite;
   }
+  .selectable .flipper,
+  .selectable::before {
+    animation: breathe 1.8s ease-in-out infinite;
+  }
   @keyframes pulse {
     50% {
       opacity: 1;
+      scale: 1.04;
+    }
+  }
+  @keyframes breathe {
+    50% {
+      scale: 1.04;
     }
   }
   @media (prefers-reduced-motion: reduce) {
     .flipper,
     .face {
       transition: none;
+    }
+    .selectable .flipper,
+    .selectable::before {
+      animation: none;
     }
     .selectable::after {
       animation: none;

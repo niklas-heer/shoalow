@@ -109,7 +109,13 @@ test("the table shows where you can play and previews a swap under the mouse", a
   const pulsing = (selector: string) =>
     page
       .locator(selector)
-      .evaluateAll((els) => els.map((el) => getComputedStyle(el, "::after").animationName.includes("pulse")));
+      .evaluateAll((els) =>
+        els.map(
+          (el) =>
+            getComputedStyle(el, "::after").animationName.includes("pulse") &&
+            getComputedStyle(el.querySelector(".flipper") ?? el).animationName.includes("breathe"),
+        ),
+      );
 
   // Only the cards you may reveal pulse, not the piles.
   expect(await pulsing("section.mine button.card.selectable")).toEqual(Array(12).fill(true));
