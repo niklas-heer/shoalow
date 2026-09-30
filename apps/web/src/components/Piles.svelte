@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { GameView } from "@shoalow/game";
+  import { hovering } from "../lib/hover.ts";
   import Card from "./Card.svelte";
 
   let {
@@ -11,6 +12,7 @@
     ondraw,
     ontake,
     ondrop,
+    outgoing = null,
   }: {
     game: GameView;
     /** Who is holding the drawn card, for the caption. */
@@ -21,19 +23,47 @@
     ondraw: () => void;
     ontake: () => void;
     ondrop: () => void;
+    /** The card a previewed swap would put on the discard pile; `value` is `null` when face down. */
+    outgoing?: { value: number | null } | null;
   } = $props();
+
+  // With a mouse or keyboard, pointing at a pile previews where its card would go.
+  let hover = $state<"deck" | "discard" | null>(null);
+  const on = (pile: "deck" | "discard") => hovering((over) => (hover = over ? pile : null));
+
+  const handGhost = $derived(
+    hover === "deck" && canDraw
+      ? { value: null }
+      : hover === "discard" && canTake && game.discardTop !== null
+        ? { value: game.discardTop }
+        : null,
+  );
+  const discardGhost = $derived(hover === "discard" && canDrop && game.hand !== null ? { value: game.hand } : outgoing);
 </script>
+
+{#snippet ghost(card: { value: number | null })}
+  <div class="preview" aria-hidden="true"><Card value={card.value} faceUp={card.value !== null} /></div>
+{/snippet}
 
 <div class="piles">
   <figure class="pile">
-    <div class="stack" class:thin={game.drawCount < 3} data-anchor="deck">
+    <div
+      class="stack"
+      class:thin={game.drawCount < 3}
+      data-anchor="deck"
+      {@attach on("deck")}
+    >
       <Card faceUp={false} selectable={canDraw} label="Draw pile, {game.drawCount} cards" onclick={ondraw} />
     </div>
     <figcaption><em>Pile</em><strong>{canDraw ? "Draw a card" : "Draw pile"}</strong><span>{game.drawCount} left · face down</span></figcaption>
   </figure>
 
   <figure class="pile">
-    <div class="spot" data-anchor="discard">
+    <div
+      class="spot"
+      data-anchor="discard"
+      {@attach on("discard")}
+    >
     {#if game.discardTop !== null}
       <Card
         value={game.discardTop}
@@ -45,6 +75,7 @@
       <button class="empty" class:drop={canDrop} disabled={!canDrop} onclick={ondrop} aria-label="Discard pile, empty"
       ></button>
     {/if}
+    {#if discardGhost}{@render ghost(discardGhost)}{/if}
     </div>
     <figcaption><em>Discard</em><strong>{canDrop ? "Discard here" : canTake ? "Take this card" : "Discard pile"}</strong><span>{canDrop ? "Then reveal a card" : "Face up"}</span></figcaption>
   </figure>
@@ -52,10 +83,11 @@
   <figure class="pile hand" aria-live="polite">
     <div class="spot" data-anchor="hand">
       {#if game.hand !== null}
-        <div class="held"><Card value={game.hand} label="{holder} holding" /></div>
+        <div class="held" class:yours={holder === "You"}><Card value={game.hand} label="{holder} holding" /></div>
       {:else}
         <div class="hand-empty" aria-hidden="true"><span>Drawn<br />card</span></div>
       {/if}
+      {#if handGhost}{@render ghost(handGhost)}{/if}
     </div>
     <figcaption><em>In hand</em><strong>{game.hand !== null ? holder === "You" ? "Your drawn card" : `${holder} holds` : "Your next card"}</strong><span>{game.hand !== null ? "Choose where it goes" : "Draw or take to begin"}</span></figcaption>
   </figure>
@@ -130,6 +162,28 @@
   .empty.drop {
     border-color: var(--lantern);
     cursor: pointer;
+    animation: pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    50% {
+      box-shadow: 0 0 18px 4px rgb(255 226 122 / 0.45);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .empty.drop {
+      animation: none;
+      box-shadow: 0 0 18px 4px rgb(255 226 122 / 0.22);
+    }
+  }
+  /* The card that would land here, hovering just above the pile like the grid's preview. */
+  .preview {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.92;
+    transform: translateY(-12%) rotate(2deg);
+    filter: drop-shadow(0 8px 10px rgb(0 0 0 / 0.45));
   }
   .spot {
     position: relative;
@@ -142,5 +196,9 @@
     position: absolute;
     inset: 0;
     filter: drop-shadow(0 10px 14px rgb(0 0 0 / 0.4));
+  }
+  /* Your own drawn card glows like the places it can go, without their ring: it is not a target. */
+  .held.yours {
+    filter: drop-shadow(0 10px 14px rgb(0 0 0 / 0.4)) drop-shadow(0 0 10px rgb(255 226 122 / 0.45));
   }
 </style>

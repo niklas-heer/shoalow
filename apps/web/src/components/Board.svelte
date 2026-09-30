@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { BoardView } from "@shoalow/game";
   import { cubicOut } from "svelte/easing";
+  import { hovering } from "../lib/hover.ts";
   import { motion } from "../lib/motion.ts";
   import Card from "./Card.svelte";
 
@@ -13,6 +14,8 @@
     action = "",
     bursting = [],
     anchor,
+    preview = null,
+    onhover,
   }: {
     board: BoardView;
     size?: "lg" | "sm";
@@ -24,6 +27,10 @@
     bursting?: number[];
     /** Prefix for the cells' flight anchors; only the live table sets it. */
     anchor?: string;
+    /** A card shown over one cell to preview where it would go. */
+    preview?: { index: number; value: number } | null;
+    /** Reports the cell a mouse or keyboard is on, or `null`; touch taps play straight away. */
+    onhover?: (index: number | null) => void;
   } = $props();
 
   function burst(_node: Element) {
@@ -40,7 +47,11 @@
 
 <div class="board {size}" role="group" aria-label="{owner} cards">
   {#each board.cards as card, i (i)}
-    <div class="cell" data-anchor={anchor ? `${anchor}-${i}` : undefined}>
+    <div
+      class="cell"
+      data-anchor={anchor ? `${anchor}-${i}` : undefined}
+      {@attach onhover && hovering((on) => onhover(on ? i : null))}
+    >
       {#if card}
         <div class="slot" out:burst>
           <Card
@@ -53,6 +64,9 @@
             onclick={onpick ? () => onpick(i) : undefined}
           />
         </div>
+        {#if preview?.index === i}
+          <div class="preview" aria-hidden="true"><Card {size} value={preview.value} /></div>
+        {/if}
       {:else}
         <div class="slot empty" class:bubbles={bursting.includes(i % 4)} aria-hidden="true">
           {#if bursting.includes(i % 4)}
@@ -80,6 +94,16 @@
   .slot {
     position: absolute;
     inset: 0;
+  }
+  /* The held card hovers just above the one it would replace, which still peeks out below. */
+  .preview {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.92;
+    transform: translateY(-12%) rotate(-2deg);
+    filter: drop-shadow(0 8px 10px rgb(0 0 0 / 0.45));
   }
   .empty {
     border: 2px dashed rgb(127 216 200 / 0.18);

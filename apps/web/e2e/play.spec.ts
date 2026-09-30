@@ -102,6 +102,48 @@ test("the practice game coaches a new player through the opening", async ({ page
   expect(errors).toEqual([]);
 });
 
+test("the table shows where you can play and previews a swap under the mouse", async ({ page }) => {
+  await page.goto("/learn");
+  await page.getByRole("button", { name: "Start the practice game" }).click();
+  const mine = page.locator("section.mine");
+  const pulsing = (selector: string) =>
+    page
+      .locator(selector)
+      .evaluateAll((els) => els.map((el) => getComputedStyle(el, "::after").animationName.includes("pulse")));
+
+  // Only the cards you may reveal pulse, not the piles.
+  expect(await pulsing("section.mine button.card.selectable")).toEqual(Array(12).fill(true));
+  await expect(page.locator(".piles .selectable")).toHaveCount(0);
+  await mine.locator("button.card.selectable").first().click();
+  await mine.locator("button.card.selectable").first().click();
+  await expect(page.locator(".prompt")).toHaveText(/^Draw from the pile or take the \d+$/, { timeout: 10_000 });
+
+  // Pointing at the draw pile shows a face-down card arriving in your hand.
+  expect(await pulsing(".piles button.card.selectable")).toEqual([true, true]);
+  await page.getByRole("button", { name: /Draw pile/ }).hover();
+  await expect(page.locator('[data-anchor="hand"] .preview .card.down')).toBeVisible();
+  await page.getByRole("button", { name: /Draw pile/ }).click();
+  await expect(page.locator(".prompt")).toHaveText("Swap it into your grid, or drop it on the discard pile");
+  const held = await page.locator('[data-anchor="hand"] .held .card').getAttribute("aria-label");
+
+  // Every grid card and the discard pile are now places the drawn card can go.
+  expect(await pulsing("section.mine button.card.selectable")).toEqual(Array(12).fill(true));
+  expect(await pulsing('[data-anchor="discard"] button.card.selectable')).toEqual([true]);
+
+  // Hovering a face-down card previews the drawn card there and a face-down card leaving.
+  const target = mine
+    .locator(".cell")
+    .filter({ has: page.locator(".card.down") })
+    .first();
+  await target.hover();
+  const ghost = target.locator(".preview .card");
+  await expect(ghost).toBeVisible();
+  expect((await ghost.getAttribute("aria-label"))?.split(": ").at(-1)).toBe(held?.split(": ").at(-1));
+  await expect(page.locator('[data-anchor="discard"] .preview .card.down')).toBeVisible();
+  await page.mouse.move(0, 0);
+  await expect(page.locator(".preview")).toHaveCount(0);
+});
+
 test("choose a goal, stop the game, restart and exit with a bot taking over", async ({ browser }) => {
   const host = await (await browser.newContext()).newPage();
   const guest = await (await browser.newContext()).newPage();

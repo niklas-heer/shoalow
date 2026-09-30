@@ -161,13 +161,31 @@
       0 0 0 3px var(--lantern),
       0 0 16px 2px rgb(255 226 122 / 0.3);
   }
+  /* Everything you can play right now breathes slowly. Only the glow's opacity changes, so the
+     pulse stays cheap with a whole grid of playable cards. */
+  .selectable::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: 0 0 18px 4px rgb(255 226 122 / 0.45);
+    opacity: 0;
+    pointer-events: none;
+    animation: pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    50% {
+      opacity: 1;
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
     .flipper,
     .face {
       transition: none;
     }
-    .selectable {
+    .selectable::after {
       animation: none;
+      opacity: 0.5;
     }
   }
 </style>

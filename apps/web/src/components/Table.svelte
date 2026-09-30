@@ -133,6 +133,19 @@
   }
 
   const holder = $derived(game ? seatName(room, game.current) : "");
+
+  // With a mouse or keyboard, the card you point at shows the held card over it and the card it
+  // would replace on the discard pile.
+  let hovered = $state<number | null>(null);
+  const preview = $derived.by(() => {
+    if (hovered === null || !game || game.hand === null || !canPick(hovered)) return null;
+    if (game.stage !== "drawn" && game.stage !== "fromDiscard") return null;
+    return { index: hovered, value: game.hand };
+  });
+  const outgoing = $derived.by(() => {
+    const card = preview && myBoard?.cards[preview.index];
+    return card ? { value: card.faceUp ? card.value : null } : null;
+  });
 </script>
 
 <svelte:window bind:innerHeight={viewHeight} />
@@ -232,6 +245,7 @@
         ondraw={() => act({ type: "drawDeck" })}
         ontake={() => act({ type: "takeDiscard" })}
         ondrop={() => act({ type: "discardHand" })}
+        {outgoing}
       />
     </div>
 
@@ -255,6 +269,8 @@
         action={game.phase === "initialFlip" || game.stage === "mustFlip" ? "Reveal this card" : `Swap with your ${game.hand}`}
         onpick={pick}
         bursting={clearedFor(me, events)}
+        {preview}
+        onhover={(i) => (hovered = i)}
       />
     </section>
 
