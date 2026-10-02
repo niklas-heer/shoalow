@@ -50,7 +50,16 @@ export const CHANGES: readonly Release[] = [
 
 const SEEN_KEY = "shoalow:changes-seen";
 
-function seenDate(): string | null {
+/**
+ * The newest entry's date and how many notes it has, so a note added to today's entry
+ * after someone read it still counts as new.
+ */
+function latestMark(): string | null {
+  const latest = CHANGES[0];
+  return latest ? `${latest.date}#${latest.notes.length}` : null;
+}
+
+function seenMark(): string | null {
   try {
     return localStorage.getItem(SEEN_KEY);
   } catch {
@@ -63,18 +72,18 @@ function seenDate(): string | null {
  * nothing to catch up on, so they start with everything marked as seen.
  */
 export function hasUnseenChanges(): boolean {
-  const latest = CHANGES[0]?.date;
+  const latest = latestMark();
   if (!latest) return false;
-  const seen = seenDate();
+  const seen = seenMark();
   if (seen === null && !savedName()) {
     markChangesSeen();
     return false;
   }
-  return seen === null || seen < latest;
+  return seen !== latest;
 }
 
 export function markChangesSeen(): void {
-  const latest = CHANGES[0]?.date;
+  const latest = latestMark();
   if (!latest) return;
   try {
     localStorage.setItem(SEEN_KEY, latest);

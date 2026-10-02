@@ -27,6 +27,14 @@ test("returning players see what's new until they have read it", async ({ page }
   await page.getByRole("button", { name: "← Back to Shoalow" }).click();
   await expect(news).toHaveAccessibleName("What's new");
 
+  // A note added to the same day's entry after reading it shows as new again.
+  await page.evaluate(() => {
+    const [date, count] = (localStorage.getItem("shoalow:changes-seen") ?? "").split("#");
+    localStorage.setItem("shoalow:changes-seen", `${date}#${Number(count) - 1}`);
+  });
+  await page.reload();
+  await expect(news).toHaveAccessibleName("What's new, not seen yet");
+
   // The footer link works from any page.
   await page.getByRole("link", { name: "What's new" }).click();
   await expect(page).toHaveURL(/\/whats-new$/);

@@ -43,6 +43,10 @@ run = "bun test packages/game/test/simulation.test.ts apps/server/test/room-sim.
 description = "Build the web client"
 run = "bun run --cwd apps/web build"
 
+[tasks.changes]
+description = "List commits since the newest What's new entry that may need a note for players"
+run = "bun apps/web/scripts/pending-changes.ts"
+
 [tasks.icons]
 description = "Render the home-screen icons from the logo"
 run = "bun apps/web/scripts/icons.ts"
