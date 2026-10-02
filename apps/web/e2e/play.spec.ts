@@ -171,7 +171,7 @@ test("the table shows where you can play and previews a swap under the mouse", a
   await expect(page.locator(".piles .selectable")).toHaveCount(0);
   await mine.locator("button.card.selectable").first().click();
   await mine.locator("button.card.selectable").first().click();
-  await expect(page.locator(".prompt")).toHaveText(/^Draw from the pile or take the \d+$/, { timeout: 10_000 });
+  await expect(page.locator(".prompt")).toHaveText(/^Draw from the pile or take the −?\d+$/, { timeout: 10_000 });
 
   // Pointing at the draw pile shows a face-down card arriving in your hand.
   expect(await pulsing(".piles button.card.selectable")).toEqual([true, true]);
@@ -210,7 +210,7 @@ test("the turn steps follow each step of a turn", async ({ page }) => {
   const mine = page.locator("section.mine button.card.selectable");
   await mine.first().click();
   await mine.first().click();
-  await expect(page.locator(".prompt")).toHaveText(/^Draw from the pile or take the \d+$/, { timeout: 10_000 });
+  await expect(page.locator(".prompt")).toHaveText(/^Draw from the pile or take the −?\d+$/, { timeout: 10_000 });
   await expect(steps).toContainText("Your turn");
   await expect(current).toHaveText(/Draw/);
   await expect(step("Reveal")).toHaveClass(/optional/);
@@ -224,7 +224,7 @@ test("the turn steps follow each step of a turn", async ({ page }) => {
   await mine.first().click();
   await expect(steps).toContainText("Kelp's turn");
   await expect(current).toHaveText(/Draw|Place|Reveal/);
-  await expect(page.locator(".prompt")).toHaveText(/^Draw from the pile or take the \d+$/, { timeout: 10_000 });
+  await expect(page.locator(".prompt")).toHaveText(/^Draw from the pile or take the −?\d+$/, { timeout: 10_000 });
 
   // A drawn card that is dropped leads on to revealing one of your own.
   await page.getByRole("button", { name: /Draw pile/ }).click();
@@ -403,7 +403,7 @@ for (const width of [1440, 1240, 1000, 390]) {
     await firstCard.click();
     await expect(page.locator(".prompt")).toHaveText("Reveal one more card");
     await board.locator("button.card.selectable").first().click();
-    await expect(page.locator(".prompt")).toHaveText(/^Draw from the pile or take the \d+$/, { timeout: 10_000 });
+    await expect(page.locator(".prompt")).toHaveText(/^Draw from the pile or take the −?\d+$/, { timeout: 10_000 });
     const assertStable = async () => {
       const after = await geometry();
       for (const [index, rect] of after.entries()) {

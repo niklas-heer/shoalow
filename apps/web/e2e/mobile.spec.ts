@@ -25,7 +25,7 @@ test("a practice round fits the screen and shows the faces of turned cards", asy
   const mine = page.locator("section.mine");
   await mine.locator("button.card.selectable").first().tap();
   await mine.locator("button.card.selectable").first().tap();
-  await expect(page.locator(".prompt")).toHaveText(/^Draw from the pile or take the \d+$/, { timeout: 10_000 });
+  await expect(page.locator(".prompt")).toHaveText(/^Draw from the pile or take the −?\d+$/, { timeout: 10_000 });
 
   // Safari can draw a card's back over its front; a turned card must show only its face.
   const up = mine.locator(".card:not(.down)");
