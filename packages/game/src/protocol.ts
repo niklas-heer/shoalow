@@ -59,6 +59,28 @@ export type ServerMessage =
   | { t: "pong" }
   | { t: "removed" };
 
+/** Public numbers about everyone's play, shown on the home page. */
+export interface Stats {
+  /** When counting began. */
+  since: number;
+  /** Right now: people connected, tables they sit at, and games in progress there. */
+  live: { players: number; tables: number; games: number };
+  /** Different players, by anonymous browser ID: ever, and in the last 30 days. */
+  players: number;
+  playersMonth: number;
+  tables: number;
+  gamesStarted: number;
+  gamesFinished: number;
+  rounds: number;
+  columnsCleared: number;
+  reshuffles: number;
+  /** The lowest score anyone has finished a round with, if any round has ended. */
+  bestRound: number | null;
+}
+
+/** An anonymous ID a browser keeps so it is counted once; it identifies nothing else. */
+export const PLAYER_ID_PATTERN = /^[A-Za-z0-9-]{16,64}$/;
+
 export interface CreateRoomResponse {
   code: string;
   token: string;

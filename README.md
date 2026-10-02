@@ -79,6 +79,11 @@ silent. The speaker button at the top of the table turns sound on or off.
 
 Tables without play for 30 days are deleted.
 
+The home page shows statistics for everyone to see: who is playing right now, how many different
+players have sat down (ever and this month), and how many tables, games, rounds, cleared columns and
+reshuffles there have been, plus the best round score so far. Players are counted per browser by a
+random ID kept in that browser; the server stores only a hash of it, with no names or addresses.
+
 ## About
 
 Shoalow plays by the rules of the card game Skyjo, which I wanted to play online with colleagues.

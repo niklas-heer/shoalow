@@ -14,6 +14,7 @@ import {
 import type { Server, ServerWebSocket } from "bun";
 import { clientKey, DEFAULT_LIMITS, type Limits, RateLimiter } from "./limits.ts";
 import { Room } from "./room.ts";
+import { StatsBook } from "./stats.ts";
 import { Store } from "./store.ts";
 
 export interface ServerOptions {
@@ -67,7 +68,7 @@ const error = (message: string, status: number) => json({ error: message }, stat
 const tooMany = (retryAfter: number) =>
   json({ error: "too many requests, please wait a moment" }, 429, { "Retry-After": String(retryAfter) });
 
-async function readBody(req: Request): Promise<{ name?: unknown; targetScore?: unknown }> {
+async function readBody(req: Request): Promise<{ name?: unknown; targetScore?: unknown; player?: unknown }> {
   try {
     const body: unknown = await req.json();
     return typeof body === "object" && body !== null && !Array.isArray(body) ? body : {};
@@ -121,6 +122,7 @@ export function createServer(options: ServerOptions) {
   mkdirSync(options.dataDir, { recursive: true });
   const store = new Store(join(options.dataDir, "shoalow.sqlite"), options.maxDbBytes);
   const botDelayMs = options.botDelayMs ?? 1400;
+  const stats = new StatsBook(store);
   const rooms = new Map<string, Room>();
   const sockets = new Map<string, Set<Socket>>();
   const botTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -138,6 +140,7 @@ export function createServer(options: ServerOptions) {
     joinRoom: new RateLimiter(limits.joinRoom),
     lookupRoom: new RateLimiter(limits.lookupRoom),
     connect: new RateLimiter(limits.connect),
+    stats: new RateLimiter(limits.stats),
     messages: new RateLimiter(limits.messages),
   };
 
@@ -224,6 +227,7 @@ export function createServer(options: ServerOptions) {
             return;
           }
           persist(room, { seat: step.seat, message: { t: "action", action: step.action, bot: true } });
+          stats.game(step.outcome.events);
           broadcast(room, step.outcome.events);
           scheduleBots(room);
         } catch (e) {
@@ -314,12 +318,24 @@ export function createServer(options: ServerOptions) {
       return;
     }
     if (!persist(room, { seat, message: msg })) return;
+    stats.game(outcome.events);
     if (msg.t === "stopGame") {
       clearTimeout(botTimers.get(room.code));
       botTimers.delete(room.code);
     }
     broadcast(room, outcome.events);
     scheduleBots(room);
+  }
+
+  /** Who is here right now: people connected, the tables they sit at, and games among those. */
+  function live(): { players: number; tables: number; games: number } {
+    let players = 0;
+    let games = 0;
+    for (const [code, set] of sockets) {
+      players += new Set([...set].map((ws) => ws.data.token)).size;
+      if (rooms.get(code)?.snap.status === "playing") games += 1;
+    }
+    return { players, tables: sockets.size, games };
   }
 
   /** Counts a new connection; a seat with too many open connections drops its oldest. */
@@ -410,6 +426,12 @@ export function createServer(options: ServerOptions) {
         return error("send JSON", 415);
     }
 
+    if (path === "/api/stats" && req.method === "GET") {
+      const wait = limiters.stats.take(clientOf(req, srv));
+      if (wait) return tooMany(wait);
+      return json(stats.view(live()), 200, { "Cache-Control": "no-store" });
+    }
+
     if (path === "/api/rooms" && req.method === "POST") {
       const wait = limiters.createRoom.take(clientOf(req, srv));
       if (wait) return tooMany(wait);
@@ -421,6 +443,8 @@ export function createServer(options: ServerOptions) {
       if (!makeSpace()) return error("too many open rooms, try again later", 503);
       rooms.set(code, created.room);
       persist(created.room);
+      stats.table();
+      stats.player(body.player);
       return json({ code, token: created.token });
     }
 
@@ -439,8 +463,10 @@ export function createServer(options: ServerOptions) {
         const seated = token === null ? {} : { seated: room.seatOf(token) !== -1 };
         return json({ code, status: room.snap.status, players: room.snap.seats.length, ...seated });
       }
-      const joined = room.join((await readBody(req)).name);
+      const body = await readBody(req);
+      const joined = room.join(body.name);
       if ("error" in joined) return error(joined.error, 409);
+      stats.player(body.player);
       persist(room, { seat: room.seatOf(joined.token), message: { t: "join" } });
       broadcast(room);
       return json({ code, token: joined.token });

@@ -14,6 +14,8 @@ export interface Limits {
   lookupRoom: Rate;
   /** Opening a table connection, per client address. */
   connect: Rate;
+  /** Reading the public statistics, per client address. */
+  stats: Rate;
   /** Messages on one connection. */
   messages: Rate;
   /** Messages over the limit before the connection is closed. */
@@ -37,6 +39,7 @@ export const DEFAULT_LIMITS: Limits = {
   joinRoom: { burst: 20, perSecond: 1 / 5 },
   lookupRoom: { burst: 60, perSecond: 1 },
   connect: { burst: 40, perSecond: 1 },
+  stats: { burst: 20, perSecond: 0.5 },
   messages: { burst: 30, perSecond: 5 },
   messageStrikes: 60,
   socketsPerClient: 64,

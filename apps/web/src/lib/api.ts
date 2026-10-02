@@ -1,4 +1,5 @@
-import type { CreateRoomResponse } from "@shoalow/game";
+import type { CreateRoomResponse, Stats } from "@shoalow/game";
+import { playerId } from "./session.ts";
 
 export class ApiError extends Error {}
 
@@ -17,10 +18,16 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 export const createRoom = (name: string, targetScore = 100) =>
-  call<CreateRoomResponse>("/api/rooms", { method: "POST", body: JSON.stringify({ name, targetScore }) });
+  call<CreateRoomResponse>("/api/rooms", {
+    method: "POST",
+    body: JSON.stringify({ name, targetScore, player: playerId() }),
+  });
 
 export const joinRoom = (code: string, name: string) =>
-  call<CreateRoomResponse>(`/api/rooms/${code}/join`, { method: "POST", body: JSON.stringify({ name }) });
+  call<CreateRoomResponse>(`/api/rooms/${code}/join`, {
+    method: "POST",
+    body: JSON.stringify({ name, player: playerId() }),
+  });
 
 export interface RoomInfo {
   code: string;
@@ -31,3 +38,5 @@ export interface RoomInfo {
 
 export const roomInfo = (code: string, token?: string) =>
   call<RoomInfo>(`/api/rooms/${code}${token ? `?token=${encodeURIComponent(token)}` : ""}`);
+
+export const fetchStats = () => call<Stats>("/api/stats");

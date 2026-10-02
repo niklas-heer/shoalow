@@ -5,6 +5,7 @@
   import Card from "./Card.svelte";
   import GameGoal from "./GameGoal.svelte";
   import Logo from "./Logo.svelte";
+  import StatsPanel from "./StatsPanel.svelte";
 
   let { onrules }: { onrules: () => void } = $props();
 
@@ -46,6 +47,7 @@
   }
 </script>
 
+<div class="layout">
 <main class="home">
   <div class="fan" aria-hidden="true">
     <div class="c c1"><Card value={-2} /></div>
@@ -83,8 +85,37 @@
     <button class="btn quiet" onclick={() => router.go("/cards")}>Meet the cards</button>
   </div>
 </main>
+<div class="side"><StatsPanel /></div>
+</div>
 
 <style>
+  /* One column on phones, with the statistics below; beside it on wide screens. */
+  .layout {
+    display: grid;
+    justify-items: center;
+  }
+  .side {
+    width: 100%;
+    max-width: 30rem;
+    padding: 0 1.25rem 3rem;
+  }
+  @media (min-width: 1100px) {
+    .layout {
+      grid-template-columns: 1fr 30rem 1fr;
+      align-items: start;
+    }
+    .home {
+      grid-column: 2;
+    }
+    .side {
+      max-width: 21rem;
+      justify-self: start;
+      position: sticky;
+      top: 1.5rem;
+      margin-top: 15.5rem;
+      padding: 0 1.25rem;
+    }
+  }
   .home {
     display: flex;
     flex-direction: column;

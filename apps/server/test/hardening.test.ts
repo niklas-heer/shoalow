@@ -129,6 +129,14 @@ test("guessing table codes is slowed down", async () => {
   expect(statuses).toEqual([404, 404, 404, 404, 404, 429, 429, 429]);
 });
 
+test("the public statistics cannot be polled in a flood", async () => {
+  const app = start({ limits: { stats: { burst: 3, perSecond: 0.001 } } });
+  const statuses: number[] = [];
+  for (let i = 0; i < 5; i++)
+    statuses.push((await fetch(new URL("/api/stats", app.url), { headers: { [CLIENT]: "6.6.6.6" } })).status);
+  expect(statuses).toEqual([200, 200, 200, 429, 429]);
+});
+
 test("cross-site requests and posts that are not JSON are refused", async () => {
   const app = start();
   const evil = { Origin: "https://evil.example" };

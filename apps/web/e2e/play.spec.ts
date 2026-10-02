@@ -1,5 +1,13 @@
 import { expect, type Page, test } from "@playwright/test";
 
+test("the home page shows everyone's statistics", async ({ page }) => {
+  await page.goto("/");
+  const panel = page.getByRole("complementary", { name: "In the shallows" });
+  await expect(panel).toBeVisible();
+  await expect(panel.getByText("Players", { exact: true })).toBeVisible();
+  await expect(panel.getByText(/^Counted since/)).toBeVisible();
+});
+
 test("browse every illustrated card and return to the game", async ({ page }) => {
   await page.goto("/");
   await page.getByLabel("Your name").fill("Anna");

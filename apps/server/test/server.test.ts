@@ -9,6 +9,7 @@ import {
   makeRandom,
   type RoomView,
   type ServerMessage,
+  type Stats,
 } from "@shoalow/game";
 import { createServer } from "../src/app.ts";
 
@@ -313,3 +314,57 @@ test("exit and stop are broadcast, persisted and invalidate old seat tokens", as
   expect(restored.game).toBeNull();
   expect((await post(app, `/api/rooms/${code}/join`, { name: "Anna" })).status).toBe(200);
 });
+
+test("statistics count players, tables and play, and survive a restart", async () => {
+  const dir = tempDir();
+  let app = start(dir);
+  const getStats = async () => (await (await fetch(new URL("/api/stats", app.url))).json()) as Stats;
+  const anna = "11111111-aaaa-4bbb-8ccc-000000000001";
+  const ben = "22222222-aaaa-4bbb-8ccc-000000000002";
+
+  const empty = await getStats();
+  expect(empty).toMatchObject({ players: 0, tables: 0, gamesStarted: 0, bestRound: null });
+  expect(empty.live).toEqual({ players: 0, tables: 0, games: 0 });
+
+  const first = await post(app, "/api/rooms", { name: "Anna", player: anna, targetScore: 20 });
+  const joined = await post(app, `/api/rooms/${first.body.code}/join`, { name: "Ben", player: ben });
+  // The same browser at another table, and requests without a usable ID, add no players.
+  await post(app, "/api/rooms", { name: "Anna", player: anna });
+  await post(app, "/api/rooms", { name: "Nobody", player: "short" });
+  await post(app, "/api/rooms", { name: "Nobody" });
+
+  const code = first.body.code as string;
+  const host = await Client.connect(app, code, first.body.token as string);
+  const guest = await Client.connect(app, code, joined.body.token as string);
+  await host.until((r) => r.seats.every((s) => s.connected));
+  const during = await getStats();
+  expect(during).toMatchObject({ players: 2, playersMonth: 2, tables: 4 });
+  expect(during.live).toEqual({ players: 2, tables: 1, games: 0 });
+
+  host.autoplay = true;
+  guest.autoplay = true;
+  host.send({ t: "start" });
+  const final = await host.until((r) => r.game?.phase === "gameOver", 30_000);
+  const game = final.game;
+  if (!game) throw new Error("no game");
+  const lowest = Math.min(...game.rounds.flatMap((r) => r.scores));
+  const after = await getStats();
+  expect(after).toMatchObject({
+    gamesStarted: 1,
+    gamesFinished: 1,
+    rounds: game.rounds.length,
+    bestRound: lowest,
+  });
+  expect(after.live).toEqual({ players: 2, tables: 1, games: 1 });
+  expect(after.columnsCleared).toBeGreaterThanOrEqual(0);
+  // Nothing about who played leaves the server.
+  const text = JSON.stringify(after);
+  for (const secret of [anna, ben, "Anna", "Ben", code]) expect(text).not.toContain(secret);
+
+  const port = Number(new URL(app.url).port);
+  app.stop();
+  app = start(dir, port);
+  const restarted = await getStats();
+  expect({ ...restarted, live: null, playersMonth: 0 }).toEqual({ ...after, live: null, playersMonth: 0 });
+  expect(restarted.live.players).toBe(0);
+}, 60_000);
