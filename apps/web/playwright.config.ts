@@ -18,7 +18,8 @@ export default defineConfig({
   ],
   webServer: {
     command: `rm -rf ../../.data/e2e && bun ../server/src/main.ts`,
-    env: { PORT: String(PORT), STATIC_DIR: "dist", DATA_DIR: "../../.data/e2e", BOT_DELAY_MS: "40" },
+    // CI runs the browsers in a container as root; the server only accepts that when told to.
+    env: { PORT: String(PORT), STATIC_DIR: "dist", DATA_DIR: "../../.data/e2e", BOT_DELAY_MS: "40", ALLOW_ROOT: "1" },
     url: `http://127.0.0.1:${PORT}/healthz`,
     reuseExistingServer: false,
   },

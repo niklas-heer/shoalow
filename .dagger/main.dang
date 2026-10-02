@@ -64,9 +64,24 @@ type ShoalowCi {
   }
 
   """
+  Start the production image on an empty root-owned volume, as Fly mounts it, and check from
+  outside that it drops root, serves the page with its security headers and saves a table.
+  The server refuses to run as root, so a healthy answer means the privilege drop worked.
+  """
+  pub smoke: String! {
+    let app = image.withMountedTemp("/data").withExposedPort(8080).asService(useEntrypoint: true)
+    container
+      .from(bunImage)
+      .withFile("/smoke.ts", source.file("apps/server/scripts/smoke.ts"))
+      .withServiceBinding("app", app)
+      .withExec(["bun", "/smoke.ts", "http://app:8080"])
+      .stdout
+  }
+
+  """
   Every check CI requires; evaluating the list makes any failing command fail the run.
   """
   pub check: [String!]! {
-    [tests, browser, image.withExec(["bun", "--version"]).stdout]
+    [tests, browser, smoke]
   }
 }

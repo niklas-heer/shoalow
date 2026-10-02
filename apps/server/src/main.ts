@@ -1,8 +1,13 @@
 import { createServer } from "./app.ts";
+import { leaveRoot } from "./privileges.ts";
+
+const dataDir = process.env.DATA_DIR ?? "./data";
+// Before anything else touches the disk or the network.
+console.log(leaveRoot(process.env, dataDir));
 
 const app = createServer({
   port: Number(process.env.PORT ?? 3000),
-  dataDir: process.env.DATA_DIR ?? "./data",
+  dataDir,
   ...(process.env.STATIC_DIR ? { staticDir: process.env.STATIC_DIR } : {}),
   botDelayMs: Number(process.env.BOT_DELAY_MS ?? 1400),
   // Fly's proxy sets this header and overwrites any value a client sends; elsewhere,

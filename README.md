@@ -134,6 +134,12 @@ mise run deploy     # fly deploy --ha=false
 
 Keep it to one machine: game state lives on that machine's volume.
 
+The image is distroless: it holds Bun and the game and nothing else, with no shell or package
+manager. Fly mounts the volume owned by root, so the server starts as root only to hand `/data` to
+the unprivileged `nonroot` user. It then switches to that user for good, with no capabilities left
+and no way back to root. It refuses to run as root otherwise. `mise run ci` starts the image on a
+root-owned volume and checks it from outside.
+
 ## License
 
 [MIT](LICENSE)
