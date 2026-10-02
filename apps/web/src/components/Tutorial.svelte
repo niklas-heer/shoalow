@@ -12,8 +12,8 @@
 
   let { onrules }: { onrules: () => void } = $props();
 
-  /** Seed 33 opens with a 0 on the discard pile and a pair of 0s in the player's grid. */
-  const SEED = 33;
+  /** Seed 3 opens with a 0 on the discard pile and a pair of 0s in the player's grid. */
+  const SEED = 3;
   let table = $state<LocalTable | null>(null);
   onDestroy(() => table?.close());
 

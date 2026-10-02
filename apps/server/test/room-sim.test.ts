@@ -8,6 +8,7 @@ import {
   MAX_PLAYERS,
   makeRandom,
   parseClientMessage,
+  seedFromNumber,
   viewFor,
 } from "@shoalow/game";
 import { isRoomSnapshot, Room } from "../src/room.ts";
@@ -106,9 +107,12 @@ function humanSeats(room: Room): number[] {
   return room.snap.seats.flatMap((s, i) => (s.kind === "human" ? [i] : []));
 }
 
+/** Deck keys from the simulation's own generator, so a failing run replays exactly. */
+const deckSeed = (random: () => number) => () => seedFromNumber(Math.floor(random() * 2 ** 31));
+
 function freshRoom(sim: Pick<Sim, "random" | "rooms">): Room {
   sim.rooms += 1;
-  return new Room(Room.create("REEFS", "Host").room.snap, sim.random);
+  return new Room(Room.create("REEFS", "Host").room.snap, sim.random, deckSeed(sim.random));
 }
 
 function checkInvariants(room: Room, where: string): void {
@@ -209,7 +213,7 @@ function run(seed: number): { steps: number; rooms: number; restarts: number; ga
       // The server restarts and reads the table back from its saved snapshot.
       const saved = JSON.parse(JSON.stringify(room.snap));
       expect(isRoomSnapshot(saved)).toBe(true);
-      sim.room = new Room(saved, random);
+      sim.room = new Room(saved, random, deckSeed(random));
       expect(sim.room.snap).toEqual(room.snap);
       restarts += 1;
     } else if (roll < 0.1) {

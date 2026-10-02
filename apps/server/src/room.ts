@@ -19,6 +19,7 @@ import {
   type RoomView,
   type Settings,
   SYSTEM,
+  secureSeed,
   viewFor,
 } from "@shoalow/game";
 
@@ -80,7 +81,10 @@ export function isRoomSnapshot(v: unknown): v is RoomSnapshot {
 export class Room {
   constructor(
     public snap: RoomSnapshot,
+    /** For bots' choices. */
     private readonly random: () => number = Math.random,
+    /** Each new game's secret deck key; simulations pass a reproducible one. */
+    private readonly deckSeed: () => number[] = secureSeed,
   ) {
     // Snapshots saved before running sums could be hidden always showed them.
     snap.settings.showSums ??= DEFAULT_SHOW_SUMS;
@@ -291,8 +295,7 @@ export class Room {
   }
 
   private startGame(): GameEvent[] {
-    const seed = Math.floor(this.random() * 2 ** 31);
-    this.snap.game = newGame(seed, this.snap.seats.length, this.snap.settings);
+    this.snap.game = newGame(this.deckSeed(), this.snap.seats.length, this.snap.settings);
     this.snap.status = "playing";
     this.snap.gameNumber += 1;
     return [{ type: "roundStarted", round: 1 }];

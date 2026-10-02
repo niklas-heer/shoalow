@@ -1,4 +1,4 @@
-import { shuffle } from "./rng.ts";
+import { seedFromNumber, shuffleDeck } from "./rng.ts";
 import {
   type Action,
   COLS,
@@ -51,7 +51,18 @@ export function visibleSum(grid: readonly (Slot | null)[]): number {
   return sum;
 }
 
-export function newGame(seed: number, playerCount: number, settings?: Partial<Settings>): GameState {
+/**
+ * Deals a new game. `seed` is a 256-bit deck key as eight 32-bit words (use `secureSeed()`),
+ * or a number that is stretched into one, for tests and replays.
+ */
+export function newGame(
+  seed: number | readonly number[],
+  playerCount: number,
+  settings?: Partial<Settings>,
+): GameState {
+  const key = typeof seed === "number" ? seedFromNumber(seed) : [...seed];
+  if (key.length !== 8 || !key.every((w) => Number.isInteger(w) && w >= 0 && w < 2 ** 32))
+    throw new Error("a deck key is eight 32-bit words");
   if (!Number.isInteger(playerCount) || playerCount < MIN_PLAYERS || playerCount > MAX_PLAYERS) {
     throw new Error(`player count must be between ${MIN_PLAYERS} and ${MAX_PLAYERS}`);
   }
@@ -61,7 +72,7 @@ export function newGame(seed: number, playerCount: number, settings?: Partial<Se
       showSums: settings?.showSums ?? DEFAULT_SHOW_SUMS,
     },
     playerCount,
-    rng: seed | 0,
+    rng: { key, block: 0 },
     round: 0,
     turn: 0,
     phase: "initialFlip",
@@ -82,7 +93,7 @@ export function newGame(seed: number, playerCount: number, settings?: Partial<Se
 }
 
 function deal(state: GameState): void {
-  const [deck, rng] = shuffle(fullDeck(), state.rng);
+  const [deck, rng] = shuffleDeck(fullDeck(), state.rng);
   state.rng = rng;
   state.round += 1;
   state.turn = 0;
@@ -226,7 +237,7 @@ function startingPlayer(state: GameState): number {
 
 function reshuffle(state: GameState, events: GameEvent[]): void {
   const top = state.discardPile.pop();
-  const [pile, rng] = shuffle(state.discardPile, state.rng);
+  const [pile, rng] = shuffleDeck(state.discardPile, state.rng);
   state.rng = rng;
   state.drawPile = pile;
   state.discardPile = top === undefined ? [] : [top];

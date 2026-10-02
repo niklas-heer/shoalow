@@ -38,10 +38,13 @@ export interface RoundResult {
   endedBy: number;
 }
 
+import type { RngState } from "./rng.ts";
+
 export interface GameState {
   settings: Settings;
   playerCount: number;
-  rng: number;
+  /** Secret: decides every shuffle. Never part of a view. */
+  rng: RngState;
   round: number;
   /** Turns completed in the current round. */
   turn: number;
