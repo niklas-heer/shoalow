@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { MAX_PLAYERS, MAX_TARGET_SCORE, MIN_TARGET_SCORE, type RoomView } from "@shoalow/game";
+  import { MAX_PLAYERS, MAX_TARGET_SCORE, MIN_TARGET_SCORE, type PileInfo, type RoomView } from "@shoalow/game";
   import type { Connection } from "../lib/connection.svelte.ts";
   import { router } from "../lib/router.svelte.ts";
   import { forgetSeat } from "../lib/session.ts";
@@ -15,6 +15,11 @@
   const hasBots = $derived(room.seats.some((s) => s.kind === "bot"));
   const link = $derived(`${location.origin}/r/${room.code}`);
   let copied = $state(false);
+  const pileHints: Record<PileInfo, string> = {
+    top: "Only the top cards, as at a real table. Nobody knows how many cards are left, so trust your instinct.",
+    counts: "Both piles show how many cards they hold.",
+    browse: "Both piles show their counts, and anyone can look through every card in the discard pile.",
+  };
 
   async function copy() {
     try {
@@ -120,6 +125,20 @@
           ? "Everyone sees what each player's face-up cards add up to."
           : "Nobody sees what face-up cards add up to: keep count yourself. Scores still appear when a round ends."}
       </p>
+    </div>
+    <div class="setting">
+      <Choice
+        legend="Piles show"
+        options={[
+          { value: "top", label: "Top cards" },
+          { value: "counts", label: "Counts" },
+          { value: "browse", label: "Everything" },
+        ]}
+        value={room.settings.piles}
+        disabled={!isHost}
+        onchange={(piles) => conn.send({ t: "setPiles", piles })}
+      />
+      <p class="hint">{pileHints[room.settings.piles]}</p>
     </div>
     {#if hasBots}
       <div class="setting"><BotSpeed {room} link={conn} /></div>

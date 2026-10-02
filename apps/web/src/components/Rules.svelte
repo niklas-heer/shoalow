@@ -80,6 +80,19 @@
       with the lowest total wins.
     </p>
 
+    <h3>When the draw pile runs out</h3>
+    <p>
+      The discard pile, except its top card, is shuffled into a new draw pile, and the draw pile is marked as new. The
+      discards tend to be the high cards everyone threw away, so a fresh pile can be bad news for a struggling player.
+    </p>
+
+    <h3>Table rules</h3>
+    <p>
+      In the lobby the host decides how much the table helps with counting. Running sums show what each player's face-up
+      cards add up to. The piles can show only their top cards, as at a real table, or how many cards they hold, or
+      that and every card in the discard pile.
+    </p>
+
     <h3>The deck</h3>
     <p>
       The deck grows with the table: 24 cards per player, so 48 for two and 240 for ten. That way the draw pile

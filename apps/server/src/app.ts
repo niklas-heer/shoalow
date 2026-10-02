@@ -4,6 +4,7 @@ import { join, normalize, resolve, sep } from "node:path";
 import {
   BOT_SPEED_FACTOR,
   type ClientMessage,
+  eventsFor,
   type GameEvent,
   parseClientMessage,
   ROOM_CODE_ALPHABET,
@@ -176,8 +177,9 @@ export function createServer(options: ServerOptions) {
     ws.send(JSON.stringify(msg));
   }
 
-  function broadcast(room: Room, events: GameEvent[] = []): void {
+  function broadcast(room: Room, raw: GameEvent[] = []): void {
     const connected = isConnected(room);
+    const events = eventsFor(raw, room.snap.game?.settings ?? room.snap.settings);
     for (const ws of sockets.get(room.code) ?? []) {
       const seat = room.seatOf(ws.data.token);
       if (seat === -1) continue;

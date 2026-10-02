@@ -150,6 +150,21 @@ test("only the host can hide running sums, only in the lobby, and the game keeps
   expect(room.view(1, () => true).settings.showSums).toBe(false);
 });
 
+test("only the host chooses what the piles show, only in the lobby", () => {
+  const { room } = lobby();
+  expect(room.snap.settings.piles).toBe("counts");
+  expect(room.handle(1, { t: "setPiles", piles: "top" }).ok).toBe(false);
+  expect(room.handle(0, { t: "setPiles", piles: "top" }).ok).toBe(true);
+  room.handle(0, { t: "start" });
+  expect(room.handle(0, { t: "setPiles", piles: "browse" })).toEqual({
+    ok: false,
+    error: "the piles can only be changed in the lobby",
+  });
+  const view = room.view(2, () => true);
+  expect(view.game?.drawCount).toBeNull();
+  expect(view.game?.deckSize).toBe(72);
+});
+
 test("snapshots saved before sums could be hidden load with sums shown", () => {
   const { room } = lobby();
   room.handle(0, { t: "start" });

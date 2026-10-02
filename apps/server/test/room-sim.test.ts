@@ -77,6 +77,7 @@ function messageFor(sim: Sim, seat: number): string {
     { t: "removeSeat", seat: seat2 },
     { t: "setTarget", score: Math.floor(random() * 600) - 50 },
     { t: "setShowSums", show: random() < 0.5 },
+    { t: "setPiles", piles: pickFrom(["top", "counts", "browse"], random) },
     { t: "setBotSpeed", speed: pickFrom(["slow", "normal", "fast"], random) },
     { t: "start" },
     { t: "start" },
@@ -138,13 +139,20 @@ function checkInvariants(room: Room, where: string): void {
   if (g.playerCount !== s.seats.length) fail("player count differs from the seats");
   if (allCards(g).length !== deckOf(g.deckSize ?? 150).length) fail(`${allCards(g).length} cards in play`);
   if (g.deckSize !== 24 * s.seats.length) fail(`a deck of ${g.deckSize} for ${s.seats.length} players`);
-  if (g.settings.showSums !== s.settings.showSums || g.settings.targetScore !== s.settings.targetScore)
+  if (
+    g.settings.showSums !== s.settings.showSums ||
+    g.settings.targetScore !== s.settings.targetScore ||
+    g.settings.piles !== s.settings.piles
+  )
     fail("the game's settings drifted from the table's");
 
   for (let seat = 0; seat < s.seats.length; seat++) {
     const view = room.view(seat, () => true);
     const text = JSON.stringify(view);
     if (text.includes("drawPile") || text.includes("token")) fail("a view carries private data");
+    const game = view.game;
+    if (game && (game.drawCount === null) !== (s.settings.piles === "top")) fail("pile counts against the setting");
+    if (game && (game.discards !== null) !== (s.settings.piles === "browse")) fail("discards against the setting");
     view.game?.boards.forEach((b, q) => {
       if ((b.visibleSum === null) === s.settings.showSums) fail("running sum against the setting");
       b.cards.forEach((c, i) => {

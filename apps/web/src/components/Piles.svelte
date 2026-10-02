@@ -2,6 +2,7 @@
   import type { GameView } from "@shoalow/game";
   import { hovering } from "../lib/hover.ts";
   import Card from "./Card.svelte";
+  import DiscardDialog from "./DiscardDialog.svelte";
 
   let {
     game,
@@ -39,6 +40,8 @@
         : null,
   );
   const discardGhost = $derived(hover === "discard" && canDrop && game.hand !== null ? { value: game.hand } : outgoing);
+  let browsing = $state(false);
+  const plural = (n: number) => (n === 1 ? "card" : "cards");
 </script>
 
 {#snippet ghost(card: { value: number | null })}
@@ -49,13 +52,25 @@
   <figure class="pile">
     <div
       class="stack"
-      class:thin={game.drawCount < 3}
+      class:thin={game.drawCount !== null && game.drawCount < 3}
       data-anchor="deck"
       {@attach on("deck")}
     >
-      <Card faceUp={false} selectable={canDraw} label="Draw pile, {game.drawCount} cards" onclick={ondraw} />
+      <Card
+        faceUp={false}
+        selectable={canDraw}
+        label="Draw pile{game.drawCount === null ? '' : `, ${game.drawCount} ${plural(game.drawCount)}`}{game.reshuffles > 0 ? ', reshuffled' : ''}"
+        onclick={ondraw}
+      />
+      {#if game.reshuffles > 0}
+        {#key game.reshuffles}
+          <span class="badge" title="The discard pile was shuffled into this draw pile"
+            >{game.reshuffles === 1 ? "New pile" : `New pile ×${game.reshuffles}`}</span
+          >
+        {/key}
+      {/if}
     </div>
-    <figcaption><em>Pile</em><strong>{canDraw ? "Draw a card" : "Draw pile"}</strong><span>{game.drawCount} left · face down</span></figcaption>
+    <figcaption><em>Pile</em><strong>{canDraw ? "Draw a card" : "Draw pile"}</strong><span>{game.drawCount === null ? "Face down" : `${game.drawCount} left · face down`}</span></figcaption>
   </figure>
 
   <figure class="pile">
@@ -77,7 +92,9 @@
     {/if}
     {#if discardGhost}{@render ghost(discardGhost)}{/if}
     </div>
-    <figcaption><em>Discard</em><strong>{canDrop ? "Discard here" : canTake ? "Take this card" : "Discard pile"}</strong><span>{canDrop ? "Then reveal a card" : "Face up"}</span></figcaption>
+    <figcaption><em>Discard</em><strong>{canDrop ? "Discard here" : canTake ? "Take this card" : "Discard pile"}</strong><span>{canDrop ? "Then reveal a card" : game.discardCount === null ? "Face up" : `${game.discardCount} ${plural(game.discardCount)} · face up`}</span>{#if game.discards !== null && game.discards.length > 0}
+      <button class="look" onclick={() => (browsing = true)}>Look through</button>
+    {/if}</figcaption>
   </figure>
 
   <figure class="pile hand" aria-live="polite">
@@ -92,6 +109,10 @@
     <figcaption><em>In hand</em><strong>{game.hand !== null ? holder === "You" ? "Your drawn card" : `${holder} holds` : "Your next card"}</strong><span>{game.hand !== null ? "Choose where it goes" : "Draw or take to begin"}</span></figcaption>
   </figure>
 </div>
+
+{#if browsing && game.discards !== null}
+  <DiscardDialog discards={game.discards} onclose={() => (browsing = false)} />
+{/if}
 
 <style>
   .piles {
@@ -150,6 +171,51 @@
   }
   .stack.thin {
     filter: none;
+  }
+  /* Marks a draw pile made from the shuffled discards; pops in each time that happens. */
+  .badge {
+    position: absolute;
+    top: -0.55rem;
+    left: 50%;
+    z-index: 1;
+    translate: -50% 0;
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    background: var(--lantern);
+    color: var(--deep);
+    font-size: 0.68rem;
+    font-weight: 800;
+    white-space: nowrap;
+    pointer-events: none;
+    animation: pop 900ms cubic-bezier(0.2, 1.6, 0.4, 1);
+  }
+  @keyframes pop {
+    from {
+      scale: 0.3;
+      opacity: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .badge {
+      animation: none;
+    }
+  }
+  .look {
+    display: block;
+    justify-self: center;
+    margin-top: 0.2rem;
+    min-height: 32px;
+    padding: 0 0.6rem;
+    border: 0;
+    border-radius: 999px;
+    background: rgb(168 201 214 / 0.14);
+    color: var(--foam);
+    font-size: 0.78rem;
+    font-weight: 650;
+    cursor: pointer;
+  }
+  .look:hover {
+    background: rgb(168 201 214 / 0.26);
   }
   .empty {
     display: block;

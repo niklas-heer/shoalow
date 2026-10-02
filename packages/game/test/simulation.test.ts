@@ -8,6 +8,8 @@ import {
   type GameState,
   makeRandom,
   newGame,
+  PILE_INFOS,
+  type PileInfo,
   SYSTEM,
   viewFor,
 } from "../src/index.ts";
@@ -26,6 +28,7 @@ function countValues(cards: number[]): number[] {
 
 function checkInvariants(s: GameState, where: string, viewer: number): void {
   const sums = s.settings.showSums;
+  const piles = s.settings.piles;
   const cards = [...s.drawPile, ...s.discardPile];
   if (s.hand !== null) cards.push(s.hand);
   for (const g of s.grids) for (const c of g) if (c) cards.push(c.value);
@@ -37,6 +40,11 @@ function checkInvariants(s: GameState, where: string, viewer: number): void {
   // Views are checked for one rotating seat per step; every seat is covered within a few steps.
   {
     const v = viewFor(s, viewer);
+    if ((v.drawCount === null) !== (piles === "top") || (v.discardCount === null) !== (piles === "top"))
+      throw new Error(`${where}: pile counts shown against the setting`);
+    if (piles === "browse" ? JSON.stringify(v.discards) !== JSON.stringify(s.discardPile) : v.discards !== null)
+      throw new Error(`${where}: discard history shown against the setting`);
+    if (v.deckSize !== s.deckSize) throw new Error(`${where}: wrong deck size in view`);
     v.boards.forEach((b, q) => {
       if ((b.visibleSum === null) === sums) throw new Error(`${where}: running sum shown against the setting`);
       b.cards.forEach((c, i) => {
@@ -58,8 +66,8 @@ interface Played {
 }
 
 /** Plays one full game with bots only, checking invariants after every action. */
-function playGame(seed: number, levels: BotLevel[], check = true, showSums = true): Played {
-  let state = newGame(seed, levels.length, { targetScore: 100, showSums });
+function playGame(seed: number, levels: BotLevel[], check = true, showSums = true, piles: PileInfo = "counts"): Played {
+  let state = newGame(seed, levels.length, { targetScore: 100, showSums, piles });
   const random = makeRandom(seed ^ 0x5eed);
   const log: [number, Action][] = [];
   for (let step = 0; step < MAX_ACTIONS; step++) {
@@ -83,8 +91,8 @@ function playGame(seed: number, levels: BotLevel[], check = true, showSums = tru
   throw new Error(`seed ${seed}: game did not finish within ${MAX_ACTIONS} actions`);
 }
 
-function replay(seed: number, playerCount: number, log: Played["log"], showSums: boolean): GameState {
-  let state = newGame(seed, playerCount, { targetScore: 100, showSums });
+function replay(seed: number, playerCount: number, log: Played["log"], showSums: boolean, piles: PileInfo): GameState {
+  let state = newGame(seed, playerCount, { targetScore: 100, showSums, piles });
   for (const [actor, action] of log) {
     const r = applyAction(state, actor, action);
     if (!r.ok) throw new Error(`replay rejected ${JSON.stringify(action)}: ${r.error}`);
@@ -102,9 +110,10 @@ test(`${GAMES} seeded bot games keep every invariant and replay exactly`, () => 
     const players = 2 + (g % 9);
     const levels: BotLevel[] = Array.from({ length: players }, (_, p) => ((g + p) % 3 === 0 ? "easy" : "normal"));
     const showSums = g % 4 !== 3;
+    const piles = PILE_INFOS[g % PILE_INFOS.length] as PileInfo;
     let played: Played;
     try {
-      played = playGame(seed, levels, true, showSums);
+      played = playGame(seed, levels, true, showSums, piles);
     } catch (e) {
       throw new Error(
         `${(e as Error).message}\nreproduce: SIM_SEED=${BASE_SEED} SIM_FROM=${g} SIM_GAMES=1 mise run sim`,
@@ -114,7 +123,7 @@ test(`${GAMES} seeded bot games keep every invariant and replay exactly`, () => 
     expect(final.phase).toBe("gameOver");
     expect(final.totals.some((t) => t >= 100)).toBe(true);
     expect(final.winners.length).toBeGreaterThan(0);
-    expect(replay(seed, players, log, showSums)).toEqual(final);
+    expect(replay(seed, players, log, showSums, piles)).toEqual(final);
     rounds += final.rounds.length;
     actions += log.length;
   }

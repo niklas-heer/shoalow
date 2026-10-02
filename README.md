@@ -64,6 +64,9 @@ silent. The speaker button at the top of the table turns sound on or off.
 - **Running sums.** Normally the table adds up everyone's face-up cards for you. The host can
   hide these sums in the lobby, so counting becomes part of the game. Round scores and totals
   still appear after each round.
+- **Piles.** The host also decides what the piles show: only their top cards, as at a real table;
+  how many cards each holds; or that and every card in the discard pile. When the draw pile runs
+  out, the discards become a new draw pile, and it is marked as new.
 - **Coming and going.** Your seat is remembered in the browser. A refresh, a locked phone or a
   dropped connection puts you straight back into the game.
 - **Someone had to leave?** The host can tap their tile and let a bot play their cards until

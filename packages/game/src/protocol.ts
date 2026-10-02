@@ -1,5 +1,5 @@
 import type { BotLevel } from "./bots.ts";
-import type { Action, GameEvent, Settings } from "./types.ts";
+import { type Action, type GameEvent, PILE_INFOS, type PileInfo, type Settings } from "./types.ts";
 import type { GameView } from "./view.ts";
 
 export const MAX_NAME_LENGTH = 20;
@@ -45,6 +45,7 @@ export type ClientMessage =
   | { t: "setTarget"; score: number }
   | { t: "setBotSpeed"; speed: BotSpeed }
   | { t: "setShowSums"; show: boolean }
+  | { t: "setPiles"; piles: PileInfo }
   | { t: "start" }
   | { t: "stopGame" }
   | { t: "nextRound" }
@@ -134,6 +135,8 @@ export function parseClientMessage(text: string): ClientMessage | null {
       return isSpeed(raw.speed) ? { t: "setBotSpeed", speed: raw.speed } : null;
     case "setShowSums":
       return typeof raw.show === "boolean" ? { t: "setShowSums", show: raw.show } : null;
+    case "setPiles":
+      return PILE_INFOS.includes(raw.piles as PileInfo) ? { t: "setPiles", piles: raw.piles as PileInfo } : null;
     case "takeover":
       return isInt(raw.seat) && typeof raw.bot === "boolean" ? { t: "takeover", seat: raw.seat, bot: raw.bot } : null;
     default:

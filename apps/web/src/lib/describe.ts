@@ -79,7 +79,10 @@ export function lastMove(room: RoomView, events: GameEvent[]): string | null {
         line = `${line ? `${line}. ` : ""}${who(e.player)} cleared a column of ${formatValue(e.value)}s`;
         break;
       case "reshuffled":
-        line = "The discard pile became the new draw pile";
+        line =
+          e.count === null
+            ? "The discard pile was shuffled into a new draw pile"
+            : `The discard pile was shuffled into a new draw pile of ${e.count}`;
         break;
       case "finalTurns":
         line = `${line ? `${line}. ` : ""}${who(e.endedBy)} revealed every card`;

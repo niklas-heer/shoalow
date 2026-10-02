@@ -245,6 +245,8 @@ test("the host can hide running sums so everyone keeps count themselves", async 
   await expect(guest.getByRole("radio", { name: "Hide" })).toBeDisabled();
 
   await host.locator("label", { hasText: "Hide" }).click();
+  await host.locator("label", { hasText: "Top cards" }).click();
+  await expect(guest.getByRole("radio", { name: "Top cards" })).toBeChecked();
   await expect(guest.getByRole("radio", { name: "Hide" })).toBeChecked();
   await expect(guest.getByText("keep count yourself")).toBeVisible();
   await host.getByRole("button", { name: "Start with 2 players" }).click();
@@ -255,9 +257,38 @@ test("the host can hide running sums so everyone keeps count themselves", async 
     await expect(page.locator(".mine-head")).toContainText("total");
     await expect(page.locator(".mine-head")).not.toContainText("showing");
     await expect(page.locator(".tile .sum")).toHaveCount(0);
+    // Top cards only: no pile sizes, nothing to look through.
+    await expect(page.getByRole("button", { name: /^Draw pile/ })).toHaveAccessibleName("Draw pile: face down");
+    await expect(page.getByRole("button", { name: "Look through" })).toHaveCount(0);
   }
   await host.getByRole("button", { name: "Game menu" }).click();
   await expect(host.getByText("no running sums")).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("a table that shows everything lets players look through the discard pile", async ({ page }) => {
+  const errors: string[] = [];
+  watchErrors(page, errors);
+  await page.goto("/");
+  await page.getByLabel("Your name").fill("Anna");
+  await page.getByRole("button", { name: "Create a table" }).click();
+  await page.getByRole("button", { name: "Add normal bot" }).click();
+  await page.locator("label", { hasText: "Everything" }).click();
+  await expect(page.getByText("look through every card")).toBeVisible();
+  await page.getByRole("button", { name: "Start with 2 players" }).click();
+  await expect(page.getByRole("button", { name: /^Draw pile, \d+ cards/ })).toBeVisible();
+  await page.getByRole("button", { name: "Game menu" }).click();
+  await expect(page.getByText("48-card deck")).toBeVisible();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+
+  await page.getByRole("button", { name: "Look through" }).click();
+  const dialog = page.getByRole("dialog", { name: "Discard pile" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText(/^\d+ cards?, newest first\.$/)).toBeVisible();
+  const shown = await dialog.locator("ol.cards li").count();
+  expect(shown).toBeGreaterThan(0);
+  await dialog.getByRole("button", { name: "Close" }).click();
+  await expect(dialog).toBeHidden();
   expect(errors).toEqual([]);
 });
 

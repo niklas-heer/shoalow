@@ -2,6 +2,7 @@ import { seedFromNumber, shuffleDeck } from "./rng.ts";
 import {
   type Action,
   COLS,
+  DEFAULT_PILE_INFO,
   DEFAULT_SHOW_SUMS,
   DEFAULT_TARGET_SCORE,
   type GameEvent,
@@ -119,6 +120,7 @@ export function newGame(
     settings: {
       targetScore: settings?.targetScore ?? DEFAULT_TARGET_SCORE,
       showSums: settings?.showSums ?? DEFAULT_SHOW_SUMS,
+      piles: settings?.piles ?? DEFAULT_PILE_INFO,
     },
     playerCount,
     deckSize,
@@ -147,6 +149,7 @@ function deal(state: GameState): void {
   state.rng = rng;
   state.round += 1;
   state.turn = 0;
+  state.reshuffles = 0;
   state.grids = [];
   for (let p = 0; p < state.playerCount; p++) {
     state.grids.push(deck.splice(0, GRID_SIZE).map((value) => ({ value, faceUp: false })));
@@ -291,6 +294,7 @@ function reshuffle(state: GameState, events: GameEvent[]): void {
   state.rng = rng;
   state.drawPile = pile;
   state.discardPile = top === undefined ? [] : [top];
+  state.reshuffles = (state.reshuffles ?? 0) + 1;
   events.push({ type: "reshuffled", count: pile.length });
 }
 

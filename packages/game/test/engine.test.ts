@@ -5,6 +5,7 @@ import {
   deckCounts,
   deckOf,
   deckSizeFor,
+  eventsFor,
   fullDeck,
   newGame,
   SYSTEM,
@@ -357,6 +358,39 @@ describe("views", () => {
       expect(v.boards.map((b) => b.visibleSum)).toEqual([null, null]);
       expect(v.totals).toEqual([12, 30]);
     }
+  });
+
+  test("the table decides whether piles show only top cards, counts, or every discard", () => {
+    const s = playing([hidden(3), hidden(9)], { discard: [4, 7, 2], draw: [1, 5, 6] });
+    const at = (piles: "top" | "counts" | "browse") => {
+      s.settings.piles = piles;
+      const v = viewFor(s, 0);
+      return {
+        draw: v.drawCount,
+        discard: v.discardCount,
+        discards: v.discards,
+        top: v.discardTop,
+        piles: v.settings.piles,
+      };
+    };
+    expect(at("top")).toEqual({ draw: null, discard: null, discards: null, top: 2, piles: "top" });
+    expect(at("counts")).toEqual({ draw: 3, discard: 3, discards: null, top: 2, piles: "counts" });
+    expect(at("browse")).toEqual({ draw: 3, discard: 3, discards: [4, 7, 2], top: 2, piles: "browse" });
+    delete (s.settings as Partial<typeof s.settings>).piles;
+    const old = viewFor(s, 0);
+    expect([old.settings.piles, old.drawCount, old.discards]).toEqual(["counts", 3, null]);
+  });
+
+  test("a reshuffle is counted for the round and its size hidden from top-cards tables", () => {
+    let s = playing([hidden(3), hidden(9)], { discard: [4, 7, 2], draw: [] });
+    s = act(s, 0, { type: "drawDeck" }).state;
+    expect(s.reshuffles).toBe(1);
+    expect(viewFor(s, 1).reshuffles).toBe(1);
+    const events = [{ type: "reshuffled", count: 2 } as const];
+    expect(eventsFor(events, { ...s.settings, piles: "counts" })).toEqual(events);
+    expect(eventsFor(events, { ...s.settings, piles: "top" })).toEqual([{ type: "reshuffled", count: null }]);
+    s.phase = "roundOver";
+    expect(act(s, SYSTEM, { type: "nextRound" }).state.reshuffles).toBe(0);
   });
 
   test("a game saved before the setting existed still shows sums", () => {

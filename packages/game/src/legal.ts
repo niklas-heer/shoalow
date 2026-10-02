@@ -22,7 +22,7 @@ export function legalActions(view: GameView): Action[] {
   switch (view.stage) {
     case "choose": {
       const actions: Action[] = [{ type: "drawDeck" }];
-      if (view.discardCount > 0) actions.push({ type: "takeDiscard" });
+      if (view.discardTop !== null) actions.push({ type: "takeDiscard" });
       return actions;
     }
     case "drawn": {

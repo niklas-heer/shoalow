@@ -6,6 +6,7 @@ import {
   chooseAction,
   cleanName,
   DEFAULT_BOT_SPEED,
+  DEFAULT_PILE_INFO,
   DEFAULT_SHOW_SUMS,
   DEFAULT_TARGET_SCORE,
   type GameEvent,
@@ -89,6 +90,9 @@ export class Room {
     // Snapshots saved before running sums could be hidden always showed them.
     snap.settings.showSums ??= DEFAULT_SHOW_SUMS;
     if (snap.game) snap.game.settings.showSums ??= DEFAULT_SHOW_SUMS;
+    // And before the host chose what the piles show: they showed counts.
+    snap.settings.piles ??= DEFAULT_PILE_INFO;
+    if (snap.game) snap.game.settings.piles ??= DEFAULT_PILE_INFO;
   }
 
   /** Creates a room after validating the host's display name. */
@@ -117,7 +121,7 @@ export class Room {
       code,
       seats: [{ token, name: hostName, kind: "human", level: null, takenOver: false }],
       host: 0,
-      settings: { targetScore: DEFAULT_TARGET_SCORE, showSums: DEFAULT_SHOW_SUMS },
+      settings: { targetScore: DEFAULT_TARGET_SCORE, showSums: DEFAULT_SHOW_SUMS, piles: DEFAULT_PILE_INFO },
       botSpeed: DEFAULT_BOT_SPEED,
       status: "lobby",
       game: null,
@@ -232,6 +236,12 @@ export class Room {
         if (!isHost) return fail("only the host can choose whether sums are shown");
         if (s.status !== "lobby") return fail("sums can only be switched in the lobby");
         s.settings = { ...s.settings, showSums: msg.show };
+        return done();
+      }
+      case "setPiles": {
+        if (!isHost) return fail("only the host can choose what the piles show");
+        if (s.status !== "lobby") return fail("the piles can only be changed in the lobby");
+        s.settings = { ...s.settings, piles: msg.piles };
         return done();
       }
       case "setBotSpeed": {

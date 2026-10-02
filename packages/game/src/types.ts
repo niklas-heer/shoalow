@@ -6,6 +6,14 @@ export const MAX_PLAYERS = 10;
 export const DEFAULT_TARGET_SCORE = 100;
 export const DEFAULT_SHOW_SUMS = true;
 
+/**
+ * What the piles reveal: only their top cards, as at a real table; how many cards each holds;
+ * or that and every card in the discard pile.
+ */
+export type PileInfo = "top" | "counts" | "browse";
+export const PILE_INFOS: readonly PileInfo[] = ["top", "counts", "browse"];
+export const DEFAULT_PILE_INFO: PileInfo = "counts";
+
 /** A slot in a player's grid; `null` once its column has been cleared. */
 export interface Slot {
   value: number;
@@ -19,6 +27,7 @@ export interface Settings {
    * counting to the players. Totals of finished rounds are always shown.
    */
   showSums: boolean;
+  piles: PileInfo;
 }
 
 export type Phase = "initialFlip" | "turn" | "roundOver" | "gameOver";
@@ -50,6 +59,8 @@ export interface GameState {
   round: number;
   /** Turns completed in the current round. */
   turn: number;
+  /** Times the discard pile became the draw pile this round. Missing in older saves: 0. */
+  reshuffles?: number;
   phase: Phase;
   drawPile: number[];
   /** Last element is the top card. */
@@ -80,7 +91,8 @@ export type GameEvent =
   | { type: "swapped"; player: number; index: number; placed: number; removed: number }
   | { type: "discarded"; player: number; value: number }
   | { type: "columnCleared"; player: number; column: number; value: number }
-  | { type: "reshuffled"; count: number }
+  /** `count` is the new draw pile's size, or null when the table plays without pile counts. */
+  | { type: "reshuffled"; count: number | null }
   | { type: "finalTurns"; endedBy: number }
   | { type: "turnStarted"; player: number }
   | { type: "roundEnded"; result: RoundResult }
