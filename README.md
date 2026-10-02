@@ -1,16 +1,49 @@
-# Shoalow
+<p align="center">
+  <img src="apps/web/src/assets/shoalow.svg" alt="" width="112">
+</p>
 
-A deep-sea card game for 2 to 10 players, right in the browser. Everyone keeps a hidden grid of
-twelve cards and tries to finish with the lowest score: pearls are worth −2, the grumpy anglerfish
-costs 12, and three equal cards in a column vanish.
+<h1 align="center">Shoalow</h1>
 
-**[Play Shoalow](https://shoalow.fly.dev)**. There's nothing to install and no account to create.
-It works on a computer, an iPhone, an iPad or an Android phone.
+<p align="center">
+  <strong>A deep-sea card game for 2 to 10 players, right in the browser.</strong><br>
+  Keep your score low: pearls help, anglerfish hurt, and three of a kind in a column vanish.
+</p>
+
+<p align="center">
+  <a href="https://shoalow.fly.dev"><strong>Play now at shoalow.fly.dev</strong></a>
+  &nbsp;·&nbsp;
+  <a href="https://shoalow.fly.dev/cards">Meet the cards</a>
+  &nbsp;·&nbsp;
+  <a href="https://shoalow.fly.dev/whats-new">What's new</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/niklas-heer/shoalow/actions/workflows/check.yml"><img src="https://github.com/niklas-heer/shoalow/actions/workflows/check.yml/badge.svg" alt="Checks"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-7fd8c8" alt="MIT license"></a>
+</p>
 
 <p align="center">
   <img src="docs/screenshots/table-desktop.jpg" alt="A game of Shoalow on a computer: four bots across the top, the piles on the left, your cards in the middle and the scores on the right" width="68%">
   &nbsp;
-  <img src="docs/screenshots/table-iphone.jpg" alt="The same table on an iPhone, with everything on one screen" width="24%">
+  <img src="docs/screenshots/table-iphone.jpg" alt="A game on an iPhone, with the whole table on one screen" width="24%">
+</p>
+
+## Why you might like it
+
+- **Nothing to install, no account.** Create a table, share the link, play.
+- **Friends, bots or both.** Up to ten seats, with easy and normal bots to fill them.
+- **Any screen.** Computer, iPhone, iPad or Android. The table always fits on one screen, and you
+  can add Shoalow to your home screen like an app.
+- **Learn in a minute.** A practice game deals you a round against a bot, with a coach explaining
+  each step.
+- **Your table, your rules.** Hide the running sums or show less of the piles, so counting and
+  memory become part of the game.
+- **Fair.** Cards are shuffled with a cryptographically secure shuffle, and your browser never
+  receives a card you shouldn't see.
+- **Free and open source.** No ads, and nothing personal is stored.
+
+<p align="center">
+  <img src="docs/screenshots/cards.jpg" alt="The first five cards: a −2 pearl clam, a −1 conch, a 0 starfish, a 1 krill and a 2 shrimp" width="90%">
 </p>
 
 ## Start a game
@@ -19,28 +52,46 @@ It works on a computer, an iPhone, an iPad or an Android phone.
 2. Send the others the invite link, or tell them the five-letter table code.
 3. Add bots if you like: **Easy** makes loose, beatable choices, and **Normal** keeps low cards
    and hunts for columns.
-4. Pick a score goal and how fast bots move, then start.
+4. Pick a score goal and your house rules, then start.
 
-Want to play alone? Add a bot or two and start. New to the game? **Learn with a practice game**
-deals you a round against one bot, with a coach explaining each step.
+Want to play alone? Add a bot or two and start. New to the game? Choose **Learn with a practice
+game** on the home page.
 
 ## How to play
 
 The rules page in the game explains everything; here is the short version.
 
-- Each player starts with twelve face-down cards and turns two of them over. The deck grows with
-  the table, 24 cards per player, so the draw pile runs out late in about half of all rounds at
-  any size.
-- On your turn, take the top card of the discard pile or draw from the pile. Swap it with any card
-  in your grid. A drawn card can instead be dropped on the discard pile, and then you turn over
+- Everyone gets twelve face-down cards in a grid and turns two of them over.
+- On your turn, take the top card of the discard pile or draw from the pile, and swap it with any
+  card in your grid. You can drop a drawn card on the discard pile instead, and then you turn over
   one of your face-down cards.
 - Three equal face-up cards in a column are cleared away.
 - When someone has turned over every card, everyone else gets one more turn. If the player who
-  ended the round doesn't have the lowest score on their own, and it's above zero, it counts
-  double.
+  ended the round doesn't have the lowest score on their own, and it's above zero, it counts double.
 - The game ends after a round in which someone reaches the score goal. The lowest total wins.
 
-Before you start, [meet all fifteen cards](https://shoalow.fly.dev/cards) in the creature gallery.
+The deck grows with the table: 24 cards per player, always in the same mix. That way the draw
+pile runs out late in about half of all rounds, whether you are two or ten. When it does, the
+discards are shuffled into a new pile, which is marked **New pile**.
+
+## House rules
+
+<img src="docs/screenshots/house-rules.jpg" alt="The lobby's game settings: game goal, running sums, what the piles show, and bot speed" width="320" align="right">
+
+In the lobby, the host sets the table's rules for the whole game:
+
+- **Game goal.** 50 points for a quick game, 100 for a classic one, 200 for a long one, or anything
+  from 10 to 500. The lobby shows a rough duration for your table.
+- **Running sums.** Shown, the table adds up everyone's face-up cards for you. Hidden, you count
+  for yourself. Round scores and totals always appear after each round.
+- **Piles show:**
+  - **Top cards:** only the top of each pile, as at a real table.
+  - **Counts:** how many cards each pile holds.
+  - **Everything:** the counts, plus every card in the discard pile.
+- **Bot speed.** Slow, Normal or Fast. This one can also change during a game, in the scores
+  panel.
+
+<br clear="right">
 
 ## On a phone or tablet
 
@@ -58,31 +109,21 @@ silent. The speaker button at the top of the table turns sound on or off.
 
 ## At the table
 
-- **Goal and length.** Choose 50 points for a quick game, 100 for a classic one, 200 for a long
-  one, or any goal from 10 to 500 with the slider. Setup shows a rough duration for the goal and
-  number of players.
-- **Running sums.** Normally the table adds up everyone's face-up cards for you. The host can
-  hide these sums in the lobby, so counting becomes part of the game. Round scores and totals
-  still appear after each round.
-- **Piles.** The host also decides what the piles show: only their top cards, as at a real table;
-  how many cards each holds; or that and every card in the discard pile. When the draw pile runs
-  out, the discards become a new draw pile, and it is marked as new.
 - **Coming and going.** Your seat is remembered in the browser. A refresh, a locked phone or a
   dropped connection puts you straight back into the game.
-- **Someone had to leave?** The host can tap their tile and let a bot play their cards until
-  they come back.
+- **Someone had to leave?** The host can tap their tile and let a bot play their cards until they
+  come back.
 - **Game menu.** Anyone can exit a running game: a bot takes over your cards, and if you were
   hosting, the next player becomes host. You can join again when the table returns to the lobby.
   The host can also stop the game and bring everyone back to the lobby with scores cleared.
-- **Bot speed.** Slow, Normal or Fast. The host can change it in the lobby or, during a game, in
-  the scores panel.
+- **Statistics.** The home page shows who is playing right now and how many players, tables,
+  games, rounds, cleared columns and reshuffles there have been, plus the best round so far.
+  Players are counted per browser by a random ID; the server keeps only a hash of it, with no
+  names or addresses.
+- **What's new.** The [What's new](https://shoalow.fly.dev/whats-new) page lists every change, and
+  the home page marks it when there is something you haven't read.
 
 Tables without play for 30 days are deleted.
-
-The home page shows statistics for everyone to see: who is playing right now, how many different
-players have sat down (ever and this month), and how many tables, games, rounds, cleared columns and
-reshuffles there have been, plus the best round score so far. Players are counted per browser by a
-random ID kept in that browser; the server stores only a hash of it, with no names or addresses.
 
 ## About
 
@@ -97,44 +138,41 @@ Tools are pinned with [mise](https://mise.jdx.dev/): Bun 1.3 for everything, Dag
 
 ```sh
 mise install
-mise run install    # bun install
-mise run dev        # game server on :3000 and Vite on :5173
-mise run check      # Biome, TypeScript, svelte-check, all tests
-mise run e2e        # Playwright: a full round in Chromium, the table on iPhone and iPad in WebKit
-mise run sim        # 5000 seeded bot games, and 400 tables fed random and hostile messages
-mise run changes    # commits since the newest What's new note, to check none is missing
-mise run icons      # re-render the home-screen icons after changing the logo
-mise run ci         # the CI pipeline, locally in Dagger
+mise run install      # bun install
+mise run dev          # game server on :3000 and Vite on :5173
+mise run check        # Biome, TypeScript, svelte-check and all tests
+mise run e2e          # Playwright in Chromium, and the table on iPhone and iPad in WebKit
+mise run sim          # 5000 seeded bot games, and 400 tables fed random and hostile messages
+mise run ci           # the CI pipeline in Dagger, with a smoke test of the production image
+mise run changes      # commits since the newest What's new note, to check none is missing
+mise run screenshots  # retake the screenshots in this README from a real game
+mise run icons        # re-render the home-screen icons after changing the logo
 ```
 
 The code is a Bun workspace:
 
 | Path | What it does |
 | --- | --- |
-| `packages/game` | Pure TypeScript rules engine, per-player views, bots, message types. No I/O. |
-| `apps/server` | `Bun.serve` with a small HTTP API, WebSockets, bot turns and SQLite persistence. |
-| `apps/web` | Svelte 5 client with the card artwork. |
+| `packages/game` | Pure TypeScript rules engine, per-player views, bots and message types. No I/O. |
+| `apps/server` | `Bun.serve` with a small HTTP API, WebSockets, bot turns, statistics and SQLite. |
+| `apps/web` | Svelte 5 client with the card artwork, the practice game and the What's new notes. |
 
-Every change a player could notice gets a note in `apps/web/src/lib/changes.ts`, written for
-players. The game shows these notes on its **What's new** page and marks the home page link for
-returning players until they have read them. `mise run changes` lists the commits since the newest
-note, and agents follow the `updating-change-notes` skill in `.agents/skills/`.
+How it stays fair and sturdy:
 
-The engine is deterministic: a game is its seed plus its action log. `viewFor(state, seat)` strips
-every face-down value before anything leaves the server, so browsers never receive hidden cards. The
-simulation test plays thousands of seeded games and checks card conservation, view secrecy, score
-arithmetic, termination and exact replay after every move. A second simulation runs whole tables:
-people join, leave and send legal, illegal and malformed messages, and the server restarts from its
-snapshots. Every table must keep its invariants and still finish its game. Either kind of failure
-prints the command that replays it.
+- **No peeking.** A game is a secret deck key plus its log of moves. `viewFor` removes every
+  face-down card and the draw pile before anything leaves the server.
+- **Unpredictable decks.** Shuffles use ChaCha20 keyed from the system's secure random source,
+  with every order equally likely.
+- **Simulated hard.** Seeded simulations play thousands of games and whole tables full of illegal
+  and malformed messages, with server restarts, and check every rule after every step. A failure
+  prints the command that replays it.
+- **Built for the open internet.** The server limits what each address can do, refuses
+  cross-site requests, sends a strict Content Security Policy, caps its disk use and keeps
+  running through bad input. `apps/server/test/hardening.test.ts` attacks a real server.
 
-The server is public and needs no account, so it limits each address: how fast it can create, join
-and look up tables, how many connections it can hold, and how many messages each connection can
-send. It refuses cross-site requests, sends a strict Content Security Policy and caps its own disk
-use. When it holds 2,000 tables, the longest-idle table nobody is connected to makes room for a new
-one. `apps/server/test/hardening.test.ts` runs these attacks against a real server. The limits are in
-`apps/server/src/limits.ts`; [the decision record](decisions/2026-10-02_104749343_limit-abuse-per-client-and-keep-the-server-up-through-bad-in.md)
-explains them.
+Every change players could notice gets a note in `apps/web/src/lib/changes.ts`, shown on the What's
+new page. [`AGENTS.md`](AGENTS.md) is the short guide for coding agents, and
+[`decisions/`](decisions) records why things are the way they are.
 
 ## Deploy
 
@@ -150,11 +188,9 @@ mise run deploy     # fly deploy --ha=false
 
 Keep it to one machine: game state lives on that machine's volume.
 
-The image is distroless: it holds Bun and the game and nothing else, with no shell or package
-manager. Fly mounts the volume owned by root, so the server starts as root only to hand `/data` to
-the unprivileged `nonroot` user. It then switches to that user for good, with no capabilities left
-and no way back to root. It refuses to run as root otherwise. `mise run ci` starts the image on a
-root-owned volume and checks it from outside.
+The image is distroless: Bun and the game, with no shell or package manager. Fly mounts the volume
+owned by root, so the server starts as root only to hand `/data` to the unprivileged `nonroot`
+user. It then switches to that user for good and refuses to run as root otherwise.
 
 ## License
 
