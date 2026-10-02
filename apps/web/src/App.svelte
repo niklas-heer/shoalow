@@ -5,6 +5,7 @@
   import RoomPage from "./components/RoomPage.svelte";
   import Rules from "./components/Rules.svelte";
   import Tutorial from "./components/Tutorial.svelte";
+  import WhatsNew from "./components/WhatsNew.svelte";
   import { router } from "./lib/router.svelte.ts";
 
   let rulesOpen = $state(false);
@@ -21,6 +22,8 @@
   <Tutorial onrules={openRules} />
 {:else if router.cards}
   <CardGallery />
+{:else if router.news}
+  <WhatsNew />
 {:else}
   <Home onrules={openRules} />
 {/if}

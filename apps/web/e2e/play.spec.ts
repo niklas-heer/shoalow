@@ -8,6 +8,30 @@ test("the home page shows everyone's statistics", async ({ page }) => {
   await expect(panel.getByText(/^Counted since/)).toBeVisible();
 });
 
+test("returning players see what's new until they have read it", async ({ page }) => {
+  const news = page.getByRole("button", { name: /^What's new/ });
+  // A first visit has nothing to catch up on.
+  await page.goto("/");
+  await expect(news).toHaveAccessibleName("What's new");
+
+  // Someone who has played before, from before the latest notes.
+  await page.evaluate(() => {
+    localStorage.setItem("shoalow:name", "Anna");
+    localStorage.setItem("shoalow:changes-seen", "2000-01-01");
+  });
+  await page.reload();
+  await expect(news).toHaveAccessibleName("What's new, not seen yet");
+  await news.click();
+  await expect(page.getByRole("heading", { name: "What's new", level: 1 })).toBeVisible();
+  await expect(page.getByRole("article").first().locator("time")).toBeVisible();
+  await page.getByRole("button", { name: "← Back to Shoalow" }).click();
+  await expect(news).toHaveAccessibleName("What's new");
+
+  // The footer link works from any page.
+  await page.getByRole("link", { name: "What's new" }).click();
+  await expect(page).toHaveURL(/\/whats-new$/);
+});
+
 test("browse every illustrated card and return to the game", async ({ page }) => {
   await page.goto("/");
   await page.getByLabel("Your name").fill("Anna");

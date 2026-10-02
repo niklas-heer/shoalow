@@ -1,4 +1,4 @@
-/** Minimal path router for home, tables, the tutorial and the card gallery. */
+/** Minimal path router for home, tables, the tutorial, the card gallery and what's new. */
 class Router {
   path = $state(location.pathname);
 
@@ -20,6 +20,10 @@ class Router {
 
   get cards(): boolean {
     return /^\/cards\/?$/.test(this.path);
+  }
+
+  get news(): boolean {
+    return /^\/whats-new\/?$/.test(this.path);
   }
 
   get roomCode(): string | null {

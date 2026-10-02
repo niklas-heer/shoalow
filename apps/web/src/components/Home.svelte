@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ApiError, createRoom } from "../lib/api.ts";
+  import { hasUnseenChanges } from "../lib/changes.ts";
   import { router } from "../lib/router.svelte.ts";
   import { savedName, saveName, saveSeat } from "../lib/session.ts";
   import Card from "./Card.svelte";
@@ -14,6 +15,7 @@
   let busy = $state(false);
   let error = $state<string | null>(null);
   let targetScore = $state(100);
+  const unseen = hasUnseenChanges();
 
   async function create(event: SubmitEvent) {
     event.preventDefault();
@@ -83,6 +85,13 @@
     <button class="btn" onclick={() => router.go("/learn")}>Learn with a practice game</button>
     <button class="btn quiet" onclick={onrules}>Read the rules</button>
     <button class="btn quiet" onclick={() => router.go("/cards")}>Meet the cards</button>
+    <button
+      class="btn quiet news"
+      aria-label={unseen ? "What's new, not seen yet" : "What's new"}
+      onclick={() => router.go("/whats-new")}
+    >
+      What's new{#if unseen}<span class="dot" aria-hidden="true"></span>{/if}
+    </button>
   </div>
 </main>
 <div class="side"><StatsPanel /></div>
@@ -179,6 +188,19 @@
     flex-wrap: wrap;
     justify-content: center;
     gap: 0.5rem;
+  }
+  .news {
+    position: relative;
+  }
+  /* Marks notes this browser has not read yet. */
+  .dot {
+    display: inline-block;
+    width: 0.55rem;
+    height: 0.55rem;
+    margin-left: 0.4rem;
+    border-radius: 50%;
+    background: var(--lantern);
+    vertical-align: 0.1em;
   }
   .error {
     margin: 0;

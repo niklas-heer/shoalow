@@ -114,6 +114,10 @@ The code is a Bun workspace:
 | `apps/server` | `Bun.serve` with a small HTTP API, WebSockets, bot turns and SQLite persistence. |
 | `apps/web` | Svelte 5 client with the card artwork. |
 
+Every change a player could notice gets a note in `apps/web/src/lib/changes.ts`, written for
+players. The game shows these notes on its **What's new** page and marks the home page link for
+returning players until they have read them.
+
 The engine is deterministic: a game is its seed plus its action log. `viewFor(state, seat)` strips
 every face-down value before anything leaves the server, so browsers never receive hidden cards. The
 simulation test plays thousands of seeded games and checks card conservation, view secrecy, score

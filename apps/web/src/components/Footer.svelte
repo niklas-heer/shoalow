@@ -1,8 +1,16 @@
 <script lang="ts">
+  import { router } from "../lib/router.svelte.ts";
 </script>
 
 <footer>
   <span>Made by <strong>Niklas Heer</strong></span>
+  <a
+    href="/whats-new"
+    onclick={(e) => {
+      e.preventDefault();
+      router.go("/whats-new");
+    }}>What's new</a
+  >
   <a href="https://github.com/niklas-heer/shoalow" target="_blank" rel="noopener noreferrer">
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="m8 7-5 5 5 5m8-10 5 5-5 5m-3-13-2 16" />
