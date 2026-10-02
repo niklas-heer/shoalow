@@ -102,6 +102,7 @@ mise run dev        # game server on :3000 and Vite on :5173
 mise run check      # Biome, TypeScript, svelte-check, all tests
 mise run e2e        # Playwright: a full round in Chromium, the table on iPhone and iPad in WebKit
 mise run sim        # 5000 seeded bot games, and 400 tables fed random and hostile messages
+mise run changes    # commits since the newest What's new note, to check none is missing
 mise run icons      # re-render the home-screen icons after changing the logo
 mise run ci         # the CI pipeline, locally in Dagger
 ```
@@ -116,7 +117,8 @@ The code is a Bun workspace:
 
 Every change a player could notice gets a note in `apps/web/src/lib/changes.ts`, written for
 players. The game shows these notes on its **What's new** page and marks the home page link for
-returning players until they have read them.
+returning players until they have read them. `mise run changes` lists the commits since the newest
+note, and agents follow the `updating-change-notes` skill in `.agents/skills/`.
 
 The engine is deterministic: a game is its seed plus its action log. `viewFor(state, seat)` strips
 every face-down value before anything leaves the server, so browsers never receive hidden cards. The

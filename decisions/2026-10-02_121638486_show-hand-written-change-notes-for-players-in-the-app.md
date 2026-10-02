@@ -34,4 +34,9 @@ it dated and in order.
 - Notes cover 29 September (launch), 30 September (table polish) and 2 October (house rules,
   scaled deck, secure shuffling, statistics, hardening), taken from the commit history.
 - Changes without a note won't appear in the app. The README's Develop section states the rule.
-- The read marker lives in local storage (`shoalow:changes-seen`), so it is per browser.
+  `mise run changes` lists feature and fix commits since the newest note, and the
+  `updating-change-notes` skill tells agents when a note is needed and how it should read. Both
+  were added on 2026-10-02 at Niklas's request.
+- The read marker lives in local storage (`shoalow:changes-seen`), so it is per browser. It
+  stores the newest entry's date and its number of notes, so a note added to today's entry still
+  shows as new.
