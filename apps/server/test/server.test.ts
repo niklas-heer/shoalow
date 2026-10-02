@@ -356,6 +356,12 @@ test("statistics count players, tables and play, and survive a restart", async (
     bestRound: lowest,
   });
   expect(after.live).toEqual({ players: 2, tables: 1, games: 1 });
+  // Deck tuning: every round of this two-player game is counted against its 48-card deck.
+  expect(after.decks).toHaveLength(1);
+  const deck = after.decks[0];
+  expect(deck).toMatchObject({ players: 2, deckSize: 48, rounds: game.rounds.length });
+  expect(deck?.reshuffled).toBeLessThanOrEqual(game.rounds.length);
+  if (deck?.progress !== null) expect(deck?.progress).toBeGreaterThanOrEqual(0);
   expect(after.columnsCleared).toBeGreaterThanOrEqual(0);
   // Nothing about who played leaves the server.
   const text = JSON.stringify(after);

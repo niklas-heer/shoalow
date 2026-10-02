@@ -50,3 +50,9 @@ Bots stand in for people, so real tables may differ somewhat.
   checks that it deals its teaching hand.
 - Card conservation in the simulations checks each game against its own deck.
 - The rules page explains the scaling and shows the mix per 30 cards.
+- Real play decides whether 24 stays. Since 2026-10-02 each round's end reports its length, deck
+  size and first reshuffle, and the public statistics sum these per table size and deck size.
+  `mise run deck-report` compares live tables with the target. It suggests 25 per player when
+  more than 65 percent of rounds reshuffle or the first reshuffle averages before 75 percent of
+  the round, and 23 when fewer than 35 percent do. It waits for 30 rounds at a table size before
+  judging.

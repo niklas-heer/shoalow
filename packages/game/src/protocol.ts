@@ -76,6 +76,11 @@ export interface Stats {
   reshuffles: number;
   /** The lowest score anyone has finished a round with, if any round has ended. */
   bestRound: number | null;
+  /**
+   * How often the draw pile ran out, per table size and deck size: rounds played, rounds that
+   * reshuffled, and how far through those rounds (0 to 1) the first reshuffle came on average.
+   */
+  decks: { players: number; deckSize: number; rounds: number; reshuffled: number; progress: number | null }[];
 }
 
 /** An anonymous ID a browser keeps so it is counted once; it identifies nothing else. */

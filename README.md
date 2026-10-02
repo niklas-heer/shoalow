@@ -144,6 +144,7 @@ mise run check        # Biome, TypeScript, svelte-check and all tests
 mise run e2e          # Playwright in Chromium, and the table on iPhone and iPad in WebKit
 mise run sim          # 5000 seeded bot games, and 400 tables fed random and hostile messages
 mise run ci           # the CI pipeline in Dagger, with a smoke test of the production image
+mise run deck-report  # how often real games reshuffle, compared with the deck's tuning
 mise run changes      # commits since the newest What's new note, to check none is missing
 mise run screenshots  # retake the screenshots in this README from a real game
 mise run icons        # re-render the home-screen icons after changing the logo

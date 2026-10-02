@@ -43,6 +43,10 @@ run = "bun test packages/game/test/simulation.test.ts apps/server/test/room-sim.
 description = "Build the web client"
 run = "bun run --cwd apps/web build"
 
+[tasks.deck-report]
+description = "Compare how often real games reshuffle with the deck's tuning (reads the live statistics)"
+run = "bun packages/game/scripts/deck-report.ts"
+
 [tasks.changes]
 description = "List commits since the newest What's new entry that may need a note for players"
 run = "bun apps/web/scripts/pending-changes.ts"

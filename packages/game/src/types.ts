@@ -61,6 +61,8 @@ export interface GameState {
   turn: number;
   /** Times the discard pile became the draw pile this round. Missing in older saves: 0. */
   reshuffles?: number;
+  /** The turn during which the draw pile first ran out this round, if it has. */
+  firstReshuffleTurn?: number | null;
   phase: Phase;
   drawPile: number[];
   /** Last element is the top card. */
@@ -95,7 +97,11 @@ export type GameEvent =
   | { type: "reshuffled"; count: number | null }
   | { type: "finalTurns"; endedBy: number }
   | { type: "turnStarted"; player: number }
-  | { type: "roundEnded"; result: RoundResult }
+  /**
+   * `turns` the round took, the `deckSize` it was dealt from, and the turn during which the
+   * draw pile first ran out (null if it never did), for tuning the deck against real play.
+   */
+  | { type: "roundEnded"; result: RoundResult; turns: number; deckSize: number; firstReshuffle: number | null }
   | { type: "roundStarted"; round: number }
   | { type: "gameOver"; winners: number[] };
 

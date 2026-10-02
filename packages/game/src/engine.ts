@@ -150,6 +150,7 @@ function deal(state: GameState): void {
   state.round += 1;
   state.turn = 0;
   state.reshuffles = 0;
+  state.firstReshuffleTurn = null;
   state.grids = [];
   for (let p = 0; p < state.playerCount; p++) {
     state.grids.push(deck.splice(0, GRID_SIZE).map((value) => ({ value, faceUp: false })));
@@ -294,6 +295,7 @@ function reshuffle(state: GameState, events: GameEvent[]): void {
   state.rng = rng;
   state.drawPile = pile;
   state.discardPile = top === undefined ? [] : [top];
+  if (!state.reshuffles) state.firstReshuffleTurn = state.turn;
   state.reshuffles = (state.reshuffles ?? 0) + 1;
   events.push({ type: "reshuffled", count: pile.length });
 }
@@ -353,7 +355,13 @@ function endRound(state: GameState, events: GameEvent[]): void {
   state.totals = state.totals.map((t, p) => t + (scores[p] as number));
   state.stage = "choose";
   state.hand = null;
-  events.push({ type: "roundEnded", result });
+  events.push({
+    type: "roundEnded",
+    result,
+    turns: state.turn,
+    deckSize: state.deckSize ?? DECK_SIZE,
+    firstReshuffle: state.firstReshuffleTurn ?? null,
+  });
 
   if (state.totals.some((t) => t >= state.settings.targetScore)) {
     const low = Math.min(...state.totals);

@@ -271,6 +271,21 @@ describe("round end and scoring", () => {
     return act(s, 1, { type: "flip", index: 0 });
   };
 
+  test("a round's end reports its length, deck and first reshuffle, for tuning the deck", () => {
+    let s = playing([nearlyDone(0), varied(0)], { draw: [12] });
+    s = act(s, 0, { type: "drawDeck" }).state;
+    s = act(s, 0, { type: "discardHand" }).state;
+    s = act(s, 0, { type: "flip", index: 11 }).state;
+    s = act(s, 1, { type: "drawDeck" }).state;
+    s = act(s, 1, { type: "discardHand" }).state;
+    const { events } = act(s, 1, { type: "flip", index: 0 });
+    const ended = events.find((e) => e.type === "roundEnded");
+    expect(ended).toMatchObject({ turns: 2, deckSize: 48, firstReshuffle: 1 });
+
+    const calm = finishRound(varied(0)).events.find((e) => e.type === "roundEnded");
+    expect(calm).toMatchObject({ turns: 2, firstReshuffle: null });
+  });
+
   test("the ender's positive score doubles when someone else is lower", () => {
     const { state } = finishRound(varied(0));
     expect(state.rounds[0]).toEqual({ scores: [42, 18], doubled: 0, endedBy: 0 });

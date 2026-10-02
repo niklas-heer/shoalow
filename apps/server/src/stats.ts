@@ -32,13 +32,23 @@ export class StatsBook {
 
   /** Counts what happened in a game: starts, rounds, columns, reshuffles and finishes. */
   game(events: readonly GameEvent[]): void {
-    const changes = new Map<Counter, number>();
-    const add = (key: Counter) => changes.set(key, (changes.get(key) ?? 0) + 1);
+    const changes = new Map<string, number>();
+    const add = (key: string, by = 1) => changes.set(key, (changes.get(key) ?? 0) + by);
+    // Per table size and deck size: rounds, rounds that reshuffled, and where in the round
+    // the first reshuffle came, summed in thousandths.
+    const deck = (players: number, size: number, turns: number, first: number | null) => {
+      const key = `deck:${players}:${size}`;
+      add(`${key}:rounds`);
+      if (first === null) return;
+      add(`${key}:reshuffled`);
+      add(`${key}:progress`, Math.round((1000 * first) / Math.max(1, turns)));
+    };
     let best: number | null = null;
     for (const e of events) {
       if (e.type === "roundStarted" && e.round === 1) add("gamesStarted");
       else if (e.type === "roundEnded") {
         add("rounds");
+        deck(e.result.scores.length, e.deckSize, e.turns, e.firstReshuffle);
         const low = Math.min(...e.result.scores);
         best = best === null ? low : Math.min(best, low);
       } else if (e.type === "columnCleared") add("columnsCleared");
@@ -78,7 +88,27 @@ export class StatsBook {
       columnsCleared: get("columnsCleared"),
       reshuffles: get("reshuffles"),
       bestRound: this.values.get("bestRound") ?? null,
+      decks: this.decks(),
     };
+  }
+
+  private decks(): Stats["decks"] {
+    const out: Stats["decks"] = [];
+    for (const [key, rounds] of this.values) {
+      const m = key.match(/^deck:(\d+):(\d+):rounds$/);
+      if (!m) continue;
+      const base = `deck:${m[1]}:${m[2]}`;
+      const reshuffled = this.values.get(`${base}:reshuffled`) ?? 0;
+      const progress = this.values.get(`${base}:progress`) ?? 0;
+      out.push({
+        players: Number(m[1]),
+        deckSize: Number(m[2]),
+        rounds,
+        reshuffled,
+        progress: reshuffled > 0 ? Math.round(progress / reshuffled) / 1000 : null,
+      });
+    }
+    return out.sort((a, b) => a.players - b.players || a.deckSize - b.deckSize);
   }
 
   /** Sets counters in memory and saves them; a failed write is logged, not fatal. */
