@@ -16,7 +16,8 @@
   );
   const low = $derived(game ? Math.min(...game.totals) : 0);
   const hasBots = $derived(room.seats.some((s) => s.kind === "bot" || s.takenOver));
-  const playing = $derived(game?.phase === "turn" || game?.phase === "initialFlip");
+  /** The running sum of face-up cards, unless the table plays without it. */
+  const showing = $derived(!!game?.settings.showSums && (game.phase === "turn" || game.phase === "initialFlip"));
 </script>
 
 {#if game}
@@ -26,7 +27,7 @@
       <p>Round {game.round}. The game ends when someone reaches {game.settings.targetScore}.</p>
     </header>
 
-    <div class="cols" aria-hidden="true"><span>{playing ? "showing" : ""}</span><span>total</span></div>
+    <div class="cols" aria-hidden="true"><span>{showing ? "showing" : ""}</span><span>total</span></div>
     <ol>
       {#each order as p, rank (p)}
         {@const seat = room.seats[p]}
@@ -40,7 +41,7 @@
           <span class="name"
             ><span class="text">{p === room.you ? "You" : seat?.name}</span>{#if won(game, p)}<Trophy />{/if}</span
           >
-          <span class="now" title="Face-up cards this round">{playing ? formatValue(game.boards[p]?.visibleSum ?? 0) : ""}</span>
+          <span class="now" title="Face-up cards this round">{showing ? formatValue(game.boards[p]?.visibleSum ?? 0) : ""}</span>
           <span class="total">{formatValue(game.totals[p] ?? 0)}</span>
         </li>
       {/each}

@@ -2,6 +2,7 @@ import { shuffle } from "./rng.ts";
 import {
   type Action,
   COLS,
+  DEFAULT_SHOW_SUMS,
   DEFAULT_TARGET_SCORE,
   type GameEvent,
   type GameState,
@@ -55,7 +56,10 @@ export function newGame(seed: number, playerCount: number, settings?: Partial<Se
     throw new Error(`player count must be between ${MIN_PLAYERS} and ${MAX_PLAYERS}`);
   }
   const state: GameState = {
-    settings: { targetScore: settings?.targetScore ?? DEFAULT_TARGET_SCORE },
+    settings: {
+      targetScore: settings?.targetScore ?? DEFAULT_TARGET_SCORE,
+      showSums: settings?.showSums ?? DEFAULT_SHOW_SUMS,
+    },
     playerCount,
     rng: seed | 0,
     round: 0,

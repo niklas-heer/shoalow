@@ -202,12 +202,12 @@
               class:current={game.phase === "turn" && game.current === p}
               class:away={seat.kind === "human" && !seat.connected && !seat.takenOver}
               onclick={() => (focused = p)}
-              aria-label="{seat.name}{won(game, p) ? ', winner' : ''}, {board.visibleSum} showing, {game.totals[p]} total. Show larger"
+              aria-label="{seat.name}{won(game, p) ? ', winner' : ''}, {board.visibleSum === null ? '' : `${board.visibleSum} showing, `}{game.totals[p]} total. Show larger"
             >
               <span class="who">
                 <span class="name">{seat.name}</span>
                 {#if won(game, p)}<Trophy />{/if}
-                <span class="sum">{formatValue(board.visibleSum)}</span>
+                {#if board.visibleSum !== null}<span class="sum">{formatValue(board.visibleSum)}</span>{/if}
               </span>
               <Board
                 {board}
@@ -259,7 +259,7 @@
     <section class="mine" aria-label="Your cards">
       <div class="mine-head">
         <span class="name">You{#if won(game, me)}<Trophy />{/if}</span>
-        <span class="stat"><strong>{formatValue(myBoard.visibleSum)}</strong> showing</span>
+        {#if myBoard.visibleSum !== null}<span class="stat"><strong>{formatValue(myBoard.visibleSum)}</strong> showing</span>{/if}
         <span class="stat"><strong>{formatValue(game.totals[me] ?? 0)}</strong> total</span>
       </div>
       <p class="board-hint" class:active={banner.yours}>

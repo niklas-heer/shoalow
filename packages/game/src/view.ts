@@ -6,7 +6,8 @@ export type CardView = null | { faceUp: false } | { faceUp: true; value: number 
 
 export interface BoardView {
   cards: CardView[];
-  visibleSum: number;
+  /** Sum of the face-up cards; null when the table plays without running sums. */
+  visibleSum: number | null;
   initialFlips: number;
   faceDown: number;
 }
@@ -32,9 +33,11 @@ export interface GameView {
 }
 
 export function viewFor(state: GameState, you: number | null): GameView {
+  // Snapshots saved before the setting existed have no `showSums`: they showed sums.
+  const sums = state.settings.showSums !== false;
   return {
     you,
-    settings: { ...state.settings },
+    settings: { ...state.settings, showSums: sums },
     round: state.round,
     turn: state.turn,
     phase: state.phase,
@@ -49,7 +52,7 @@ export function viewFor(state: GameState, you: number | null): GameView {
         if (s === null) return null;
         return s.faceUp ? { faceUp: true, value: s.value } : { faceUp: false };
       }),
-      visibleSum: visibleSum(grid),
+      visibleSum: sums ? visibleSum(grid) : null,
       initialFlips: state.initialFlips[p] ?? 0,
       faceDown: grid.filter((s) => s !== null && !s.faceUp).length,
     })),

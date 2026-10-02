@@ -28,6 +28,7 @@ function countValues(cards: number[]): number[] {
 }
 
 function checkInvariants(s: GameState, where: string, viewer: number): void {
+  const sums = s.settings.showSums;
   const cards = [...s.drawPile, ...s.discardPile];
   if (s.hand !== null) cards.push(s.hand);
   for (const g of s.grids) for (const c of g) if (c) cards.push(c.value);
@@ -39,6 +40,7 @@ function checkInvariants(s: GameState, where: string, viewer: number): void {
   {
     const v = viewFor(s, viewer);
     v.boards.forEach((b, q) => {
+      if ((b.visibleSum === null) === sums) throw new Error(`${where}: running sum shown against the setting`);
       b.cards.forEach((c, i) => {
         const real = s.grids[q]?.[i] ?? null;
         if ((c === null) !== (real === null)) throw new Error(`${where}: cleared slot mismatch`);
@@ -58,8 +60,8 @@ interface Played {
 }
 
 /** Plays one full game with bots only, checking invariants after every action. */
-function playGame(seed: number, levels: BotLevel[], check = true): Played {
-  let state = newGame(seed, levels.length, { targetScore: 100 });
+function playGame(seed: number, levels: BotLevel[], check = true, showSums = true): Played {
+  let state = newGame(seed, levels.length, { targetScore: 100, showSums });
   const random = makeRandom(seed ^ 0x5eed);
   const log: [number, Action][] = [];
   for (let step = 0; step < MAX_ACTIONS; step++) {
@@ -83,8 +85,8 @@ function playGame(seed: number, levels: BotLevel[], check = true): Played {
   throw new Error(`seed ${seed}: game did not finish within ${MAX_ACTIONS} actions`);
 }
 
-function replay(seed: number, playerCount: number, log: Played["log"]): GameState {
-  let state = newGame(seed, playerCount, { targetScore: 100 });
+function replay(seed: number, playerCount: number, log: Played["log"], showSums: boolean): GameState {
+  let state = newGame(seed, playerCount, { targetScore: 100, showSums });
   for (const [actor, action] of log) {
     const r = applyAction(state, actor, action);
     if (!r.ok) throw new Error(`replay rejected ${JSON.stringify(action)}: ${r.error}`);
@@ -101,9 +103,10 @@ test(`${GAMES} seeded bot games keep every invariant and replay exactly`, () => 
     const seed = (BASE_SEED + g * 7919) | 0;
     const players = 2 + (g % 9);
     const levels: BotLevel[] = Array.from({ length: players }, (_, p) => ((g + p) % 3 === 0 ? "easy" : "normal"));
+    const showSums = g % 4 !== 3;
     let played: Played;
     try {
-      played = playGame(seed, levels);
+      played = playGame(seed, levels, true, showSums);
     } catch (e) {
       throw new Error(
         `${(e as Error).message}\nreproduce: SIM_SEED=${BASE_SEED} SIM_FROM=${g} SIM_GAMES=1 mise run sim`,
@@ -113,13 +116,23 @@ test(`${GAMES} seeded bot games keep every invariant and replay exactly`, () => 
     expect(final.phase).toBe("gameOver");
     expect(final.totals.some((t) => t >= 100)).toBe(true);
     expect(final.winners.length).toBeGreaterThan(0);
-    expect(replay(seed, players, log)).toEqual(final);
+    expect(replay(seed, players, log, showSums)).toEqual(final);
     rounds += final.rounds.length;
     actions += log.length;
   }
   const seconds = ((performance.now() - started) / 1000).toFixed(1);
   console.log(`simulated ${GAMES} games, ${rounds} rounds, ${actions} actions in ${seconds}s (base seed ${BASE_SEED})`);
 }, 600_000);
+
+test("bots play exactly the same game whether or not sums are shown", () => {
+  for (let g = 0; g < 20; g++) {
+    const levels: BotLevel[] = Array.from({ length: 2 + (g % 5) }, (_, p) => (p % 2 ? "easy" : "normal"));
+    const shown = playGame(4000 + g, levels, false, true);
+    const hidden = playGame(4000 + g, levels, false, false);
+    expect(hidden.log).toEqual(shown.log);
+    expect(hidden.final.totals).toEqual(shown.final.totals);
+  }
+});
 
 test("normal bots clearly beat easy bots head to head", () => {
   let normalWins = 0;

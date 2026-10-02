@@ -20,6 +20,14 @@ test("browse every illustrated card and return to the game", async ({ page }) =>
   await expect(page.getByRole("button", { name: "Create a table" })).toBeVisible();
 });
 
+/** Collects script errors and anything the Content Security Policy blocked. */
+function watchErrors(page: Page, errors: string[]): void {
+  page.on("pageerror", (e) => errors.push(e.message));
+  page.on("console", (m) => {
+    if (/Content Security Policy|Refused to/i.test(m.text())) errors.push(m.text());
+  });
+}
+
 /** Takes one sensible step if this page has something to do; returns whether it acted. */
 async function step(page: Page): Promise<boolean> {
   const selectable = page.locator("button.card.selectable");
@@ -40,7 +48,7 @@ test("two players and a bot play a full round in the browser", async ({ browser 
   const host = await (await browser.newContext()).newPage();
   const guest = await (await browser.newContext()).newPage();
   const errors: string[] = [];
-  for (const p of [host, guest]) p.on("pageerror", (e) => errors.push(e.message));
+  for (const p of [host, guest]) watchErrors(p, errors);
 
   await host.goto("/");
   await host.getByLabel("Your name").fill("Anna");
@@ -59,6 +67,7 @@ test("two players and a bot play a full round in the browser", async ({ browser 
   await host.getByRole("button", { name: "Start with 3 players" }).click();
 
   for (const p of [host, guest]) await expect(p.locator(".prompt")).toHaveText("Reveal two of your cards");
+  await expect(host.locator(".mine-head")).toContainText("showing");
 
   // Play until both see the round summary.
   const summary = (p: Page) => p.getByRole("heading", { name: "Round 1 is over" });
@@ -217,6 +226,38 @@ test("a finished game throws confetti and puts a trophy beside the winner", asyn
   await expect(winners.getByRole("img", { name: "winner" })).toHaveCount(await winners.count());
   await page.waitForTimeout(300);
   await expect(page.locator("canvas.confetti")).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test("the host can hide running sums so everyone keeps count themselves", async ({ browser }) => {
+  const host = await (await browser.newContext()).newPage();
+  const guest = await (await browser.newContext()).newPage();
+  const errors: string[] = [];
+  for (const p of [host, guest]) watchErrors(p, errors);
+  await host.goto("/");
+  await host.getByLabel("Your name").fill("Anna");
+  await host.getByRole("button", { name: "Create a table" }).click();
+  const code = (await host.locator("p.code").textContent())?.trim() ?? "";
+  await guest.goto(`/r/${code}`);
+  await guest.getByLabel("Your name").fill("Ben");
+  await guest.getByRole("button", { name: "Take a seat" }).click();
+  await expect(guest.getByRole("radio", { name: "Show" })).toBeChecked();
+  await expect(guest.getByRole("radio", { name: "Hide" })).toBeDisabled();
+
+  await host.locator("label", { hasText: "Hide" }).click();
+  await expect(guest.getByRole("radio", { name: "Hide" })).toBeChecked();
+  await expect(guest.getByText("keep count yourself")).toBeVisible();
+  await host.getByRole("button", { name: "Start with 2 players" }).click();
+
+  for (const page of [host, guest]) {
+    await expect(page.locator(".prompt")).toHaveText("Reveal two of your cards");
+    await page.locator("section.mine button.card.selectable").first().click();
+    await expect(page.locator(".mine-head")).toContainText("total");
+    await expect(page.locator(".mine-head")).not.toContainText("showing");
+    await expect(page.locator(".tile .sum")).toHaveCount(0);
+  }
+  await host.getByRole("button", { name: "Game menu" }).click();
+  await expect(host.getByText("no running sums")).toBeVisible();
   expect(errors).toEqual([]);
 });
 

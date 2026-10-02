@@ -6,6 +6,7 @@ import {
   chooseAction,
   cleanName,
   DEFAULT_BOT_SPEED,
+  DEFAULT_SHOW_SUMS,
   DEFAULT_TARGET_SCORE,
   type GameEvent,
   type GameState,
@@ -53,7 +54,11 @@ export class Room {
   constructor(
     public snap: RoomSnapshot,
     private readonly random: () => number = Math.random,
-  ) {}
+  ) {
+    // Snapshots saved before running sums could be hidden always showed them.
+    snap.settings.showSums ??= DEFAULT_SHOW_SUMS;
+    if (snap.game) snap.game.settings.showSums ??= DEFAULT_SHOW_SUMS;
+  }
 
   /** Creates a room after validating the host's display name. */
   static createChecked(
@@ -81,7 +86,7 @@ export class Room {
       code,
       seats: [{ token, name: hostName, kind: "human", level: null, takenOver: false }],
       host: 0,
-      settings: { targetScore: DEFAULT_TARGET_SCORE },
+      settings: { targetScore: DEFAULT_TARGET_SCORE, showSums: DEFAULT_SHOW_SUMS },
       botSpeed: DEFAULT_BOT_SPEED,
       status: "lobby",
       game: null,
@@ -194,6 +199,12 @@ export class Room {
           return fail(`the target must be between ${MIN_TARGET_SCORE} and ${MAX_TARGET_SCORE}`);
         }
         s.settings = { ...s.settings, targetScore: msg.score };
+        return done();
+      }
+      case "setShowSums": {
+        if (!isHost) return fail("only the host can choose whether sums are shown");
+        if (s.status !== "lobby") return fail("sums can only be switched in the lobby");
+        s.settings = { ...s.settings, showSums: msg.show };
         return done();
       }
       case "setBotSpeed": {

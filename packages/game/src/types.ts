@@ -4,6 +4,7 @@ export const GRID_SIZE = ROWS * COLS;
 export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 10;
 export const DEFAULT_TARGET_SCORE = 100;
+export const DEFAULT_SHOW_SUMS = true;
 
 /** A slot in a player's grid; `null` once its column has been cleared. */
 export interface Slot {
@@ -13,6 +14,11 @@ export interface Slot {
 
 export interface Settings {
   targetScore: number;
+  /**
+   * Whether views include each board's running sum of face-up cards. Hiding it leaves the
+   * counting to the players. Totals of finished rounds are always shown.
+   */
+  showSums: boolean;
 }
 
 export type Phase = "initialFlip" | "turn" | "roundOver" | "gameOver";

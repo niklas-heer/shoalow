@@ -4,6 +4,7 @@
   import { router } from "../lib/router.svelte.ts";
   import { forgetSeat } from "../lib/session.ts";
   import BotSpeed from "./BotSpeed.svelte";
+  import Choice from "./Choice.svelte";
   import GameGoal from "./GameGoal.svelte";
   import Logo from "./Logo.svelte";
 
@@ -102,6 +103,23 @@
         disabled={!isHost}
         onchange={setTarget}
       />
+    </div>
+    <div class="setting">
+      <Choice
+        legend="Running sums"
+        options={[
+          { value: "show", label: "Show" },
+          { value: "hide", label: "Hide" },
+        ]}
+        value={room.settings.showSums ? "show" : "hide"}
+        disabled={!isHost}
+        onchange={(choice) => conn.send({ t: "setShowSums", show: choice === "show" })}
+      />
+      <p class="hint">
+        {room.settings.showSums
+          ? "Everyone sees what each player's face-up cards add up to."
+          : "Nobody sees what face-up cards add up to: keep count yourself. Scores still appear when a round ends."}
+      </p>
     </div>
     {#if hasBots}
       <div class="setting"><BotSpeed {room} link={conn} /></div>

@@ -26,7 +26,7 @@
         <button class="btn quiet small" onclick={() => dialog.close()}>Close</button>
       </header>
       <p class="stats">
-        <span><strong>{formatValue(board.visibleSum)}</strong> showing</span>
+        {#if board.visibleSum !== null}<span><strong>{formatValue(board.visibleSum)}</strong> showing</span>{/if}
         <span><strong>{board.faceDown}</strong> face down</span>
         <span><strong>{formatValue(room.game.totals[seat] ?? 0)}</strong> total</span>
       </p>

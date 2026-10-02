@@ -8,7 +8,7 @@
 
   const game = $derived(room.game);
   const low = $derived(game ? Math.min(...game.totals) : 0);
-  const live = $derived(game?.phase === "turn" || game?.phase === "initialFlip");
+  const live = $derived(!!game?.settings.showSums && (game.phase === "turn" || game.phase === "initialFlip"));
 </script>
 
 {#if game}

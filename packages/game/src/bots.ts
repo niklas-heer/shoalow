@@ -130,7 +130,9 @@ function opponentsBest(view: GameView): number {
   let best = Number.POSITIVE_INFINITY;
   view.boards.forEach((b, p) => {
     if (p === view.you) return;
-    best = Math.min(best, b.visibleSum + b.faceDown * UNKNOWN - OPPONENT_LAST_TURN_GAIN);
+    // Bots count face-up cards themselves, so they play the same whether or not the table shows sums.
+    const shown = b.cards.reduce((sum, c) => sum + (c?.faceUp ? c.value : 0), 0);
+    best = Math.min(best, shown + b.faceDown * UNKNOWN - OPPONENT_LAST_TURN_GAIN);
   });
   return best;
 }

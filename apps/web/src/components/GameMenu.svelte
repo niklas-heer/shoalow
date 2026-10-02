@@ -14,7 +14,7 @@
 <dialog bind:this={dialog} aria-labelledby="game-menu-title" onclose={onclose} onclick={(event) => event.target === dialog && dialog.close()}>
   <div class="inner">
     <header><h2 id="game-menu-title">Your game</h2><button class="btn quiet small" onclick={() => dialog.close()}>Close</button></header>
-    <p class="table-code">Table {room.code} · goal {room.settings.targetScore} points</p>
+    <p class="table-code">Table {room.code} · goal {room.settings.targetScore} points{room.settings.showSums ? "" : " · no running sums"}</p>
     {#if isHost}
       <section>
         <h3>{stopping ? "Stop this game?" : "Stop the game"}</h3>

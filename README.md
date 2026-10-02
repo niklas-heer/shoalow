@@ -59,6 +59,9 @@ silent. The speaker button at the top of the table turns sound on or off.
 - **Goal and length.** Choose 50 points for a quick game, 100 for a classic one, 200 for a long
   one, or any goal from 10 to 500 with the slider. Setup shows a rough duration for the goal and
   number of players.
+- **Running sums.** Normally the table adds up everyone's face-up cards for you. The host can
+  hide these sums in the lobby, so counting becomes part of the game. Round scores and totals
+  still appear after each round.
 - **Coming and going.** Your seat is remembered in the browser. A refresh, a locked phone or a
   dropped connection puts you straight back into the game.
 - **Someone had to leave?** The host can tap their tile and let a bot play their cards until

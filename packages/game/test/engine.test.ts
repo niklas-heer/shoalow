@@ -305,4 +305,24 @@ describe("views", () => {
     expect(Object.keys(v)).not.toContain("drawPile");
     expect(JSON.stringify(v)).not.toContain('"value":9');
   });
+
+  test("a table without running sums gets no sums in any view, while totals stay", () => {
+    const s = playing([["u4", "u5", 3, 3, 3, 3, 3, 3, 3, 3, 3, 3], hidden(9)]);
+    s.settings.showSums = false;
+    s.totals = [12, 30];
+    for (const seat of [0, 1, null]) {
+      const v = viewFor(s, seat);
+      expect(v.settings.showSums).toBe(false);
+      expect(v.boards.map((b) => b.visibleSum)).toEqual([null, null]);
+      expect(v.totals).toEqual([12, 30]);
+    }
+  });
+
+  test("a game saved before the setting existed still shows sums", () => {
+    const s = playing([["u4", "u5", 3, 3, 3, 3, 3, 3, 3, 3, 3, 3], hidden(9)]);
+    delete (s.settings as Partial<typeof s.settings>).showSums;
+    const v = viewFor(s, 0);
+    expect(v.settings.showSums).toBe(true);
+    expect(v.boards[0]!.visibleSum).toBe(9);
+  });
 });

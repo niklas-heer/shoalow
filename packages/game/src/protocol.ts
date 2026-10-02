@@ -40,6 +40,7 @@ export type ClientMessage =
   | { t: "removeSeat"; seat: number }
   | { t: "setTarget"; score: number }
   | { t: "setBotSpeed"; speed: BotSpeed }
+  | { t: "setShowSums"; show: boolean }
   | { t: "start" }
   | { t: "stopGame" }
   | { t: "nextRound" }
@@ -117,6 +118,8 @@ export function parseClientMessage(text: string): ClientMessage | null {
       return isInt(raw.score) ? { t: "setTarget", score: raw.score } : null;
     case "setBotSpeed":
       return isSpeed(raw.speed) ? { t: "setBotSpeed", speed: raw.speed } : null;
+    case "setShowSums":
+      return typeof raw.show === "boolean" ? { t: "setShowSums", show: raw.show } : null;
     case "takeover":
       return isInt(raw.seat) && typeof raw.bot === "boolean" ? { t: "takeover", seat: raw.seat, bot: raw.bot } : null;
     default:

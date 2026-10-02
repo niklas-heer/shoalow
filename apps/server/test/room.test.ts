@@ -132,3 +132,31 @@ test("a bot plays a taken-over seat and its owner cannot act until they reclaim 
   expect(room.reclaim(1)).toBe(true);
   expect(room.isBotControlled(1)).toBe(false);
 });
+
+test("only the host can hide running sums, only in the lobby, and the game keeps the choice", () => {
+  const { room } = lobby();
+  expect(room.snap.settings.showSums).toBe(true);
+  expect(room.handle(1, { t: "setShowSums", show: false })).toEqual({
+    ok: false,
+    error: "only the host can choose whether sums are shown",
+  });
+  expect(room.handle(0, { t: "setShowSums", show: false }).ok).toBe(true);
+  room.handle(0, { t: "start" });
+  expect(room.handle(0, { t: "setShowSums", show: true }).ok).toBe(false);
+  const view = room.view(1, () => true);
+  expect(view.settings.showSums).toBe(false);
+  expect(view.game?.boards.every((b) => b.visibleSum === null)).toBe(true);
+  room.handle(0, { t: "stopGame" });
+  expect(room.view(1, () => true).settings.showSums).toBe(false);
+});
+
+test("snapshots saved before sums could be hidden load with sums shown", () => {
+  const { room } = lobby();
+  room.handle(0, { t: "start" });
+  const old = JSON.parse(JSON.stringify(room.snap));
+  delete old.settings.showSums;
+  delete old.game.settings.showSums;
+  const loaded = new Room(old);
+  expect(loaded.snap.settings.showSums).toBe(true);
+  expect(loaded.view(0, () => true).game?.boards[0]?.visibleSum).toBe(0);
+});
