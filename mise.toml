@@ -47,6 +47,11 @@ run = "bun run --cwd apps/web build"
 description = "List commits since the newest What's new entry that may need a note for players"
 run = "bun apps/web/scripts/pending-changes.ts"
 
+[tasks.screenshots]
+description = "Retake the README screenshots from a real game in Chromium and WebKit"
+depends = ["build"]
+run = "bun apps/web/scripts/screenshots.ts"
+
 [tasks.icons]
 description = "Render the home-screen icons from the logo"
 run = "bun apps/web/scripts/icons.ts"
