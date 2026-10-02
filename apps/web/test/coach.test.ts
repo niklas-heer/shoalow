@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { applyAction, newGame, type RoomView, viewFor } from "@shoalow/game";
-import { coachNote, coachTip } from "../src/lib/coach.ts";
+import { coachNote, coachTip, PRACTICE_SEED } from "../src/lib/coach.ts";
 
 const seats: RoomView["seats"] = [
   { name: "Anna", kind: "human", level: null, connected: true, takenOver: false },
@@ -17,8 +17,14 @@ const room = (state: ReturnType<typeof newGame>): RoomView => ({
   game: viewFor(state, 0),
 });
 
+test("the practice game deals its teaching hand", () => {
+  const state = newGame(PRACTICE_SEED, 2, { targetScore: 50 });
+  expect(state.discardPile.at(-1)).toBe(0);
+  expect(state.grids[0]?.filter((c) => c?.value === 0).length).toBeGreaterThanOrEqual(2);
+});
+
 test("the coach walks through the opening reveal", () => {
-  let state = newGame(3, 2, { targetScore: 50 });
+  let state = newGame(PRACTICE_SEED, 2, { targetScore: 50 });
   expect(coachTip(room(state))?.title).toBe("Peek at two cards");
   const step = (seat: number, index: number) => {
     const r = applyAction(state, seat, { type: "flip", index });
@@ -32,12 +38,12 @@ test("the coach walks through the opening reveal", () => {
   step(1, 0);
   step(1, 1);
   const tip = coachTip(room(state));
-  // Seed 3 opens with a 0 on the discard pile, so whoever starts is told about it.
+  // The practice deal opens with a 0 on the discard pile, so whoever starts is told about it.
   expect(tip?.title === "Take the 0" || tip?.title === "🤖 Kelp's turn").toBe(true);
 });
 
 test("the coach remarks on cleared columns and the round ending", () => {
-  const r = room(newGame(3, 2));
+  const r = room(newGame(PRACTICE_SEED, 2));
   expect(coachNote(r, [{ type: "columnCleared", player: 0, column: 1, value: 4 }])).toMatch(/^Column cleared/);
   expect(coachNote(r, [{ type: "finalTurns", endedBy: 1 }])).toMatch(/^🤖 Kelp turned over every card/);
   expect(coachNote(r, [{ type: "turnStarted", player: 0 }])).toBeNull();

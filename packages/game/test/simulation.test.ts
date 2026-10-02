@@ -4,8 +4,7 @@ import {
   applyAction,
   type BotLevel,
   chooseAction,
-  DECK_SIZE,
-  fullDeck,
+  deckOf,
   type GameState,
   makeRandom,
   newGame,
@@ -19,8 +18,6 @@ const BASE_SEED = Number(process.env.SIM_SEED ?? 20260929);
 const FROM = Number(process.env.SIM_FROM ?? 0);
 const MAX_ACTIONS = 50_000;
 
-const DECK_COUNTS = countValues(fullDeck());
-
 function countValues(cards: number[]): number[] {
   const counts = Array.from({ length: 15 }, () => 0);
   for (const v of cards) counts[v + 2] = (counts[v + 2] ?? 0) + 1;
@@ -32,8 +29,9 @@ function checkInvariants(s: GameState, where: string, viewer: number): void {
   const cards = [...s.drawPile, ...s.discardPile];
   if (s.hand !== null) cards.push(s.hand);
   for (const g of s.grids) for (const c of g) if (c) cards.push(c.value);
-  if (cards.length !== DECK_SIZE) throw new Error(`${where}: ${cards.length} cards in play`);
-  if (JSON.stringify(countValues(cards)) !== JSON.stringify(DECK_COUNTS))
+  const deck = deckOf(s.deckSize ?? 150);
+  if (cards.length !== deck.length) throw new Error(`${where}: ${cards.length} cards in play`);
+  if (JSON.stringify(countValues(cards)) !== JSON.stringify(countValues(deck)))
     throw new Error(`${where}: card values changed`);
 
   // Views are checked for one rotating seat per step; every seat is covered within a few steps.

@@ -1,6 +1,12 @@
 import type { BoardView, GameEvent, RoomView } from "@shoalow/game";
 import { formatValue } from "./cards.ts";
 
+/**
+ * The practice game's deal: a 0 on the discard pile and two 0s in the player's grid, so the
+ * coach can show taking a discard and building a column. A test keeps it that way.
+ */
+export const PRACTICE_SEED = 21;
+
 export interface Tip {
   title: string;
   text: string;

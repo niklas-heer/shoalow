@@ -28,7 +28,9 @@ deals you a round against one bot, with a coach explaining each step.
 
 The rules page in the game explains everything; here is the short version.
 
-- Each player starts with twelve face-down cards and turns two of them over.
+- Each player starts with twelve face-down cards and turns two of them over. The deck grows with
+  the table, 24 cards per player, so the draw pile runs out late in about half of all rounds at
+  any size.
 - On your turn, take the top card of the discard pile or draw from the pile. Swap it with any card
   in your grid. A drawn card can instead be dropped on the discard pile, and then you turn over
   one of your face-down cards.

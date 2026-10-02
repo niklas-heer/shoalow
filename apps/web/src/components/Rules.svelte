@@ -11,11 +11,12 @@
     if (!open && dialog.open) dialog.close();
   });
 
+  /** Copies per 30 cards; every deck is made of this mix. */
   const deck = [
-    { value: -2, count: 5 },
-    { value: -1, count: 10 },
-    { value: 0, count: 15 },
-    ...Array.from({ length: 12 }, (_, i) => ({ value: i + 1, count: 10 })),
+    { value: -2, count: 1 },
+    { value: -1, count: 2 },
+    { value: 0, count: 3 },
+    ...Array.from({ length: 12 }, (_, i) => ({ value: i + 1, count: 2 })),
   ];
 </script>
 
@@ -80,6 +81,11 @@
     </p>
 
     <h3>The deck</h3>
+    <p>
+      The deck grows with the table: 24 cards per player, so 48 for two and 240 for ten. That way the draw pile
+      runs out late in about half of all rounds, whatever the table size. Every deck has the same mix; in every 30
+      cards there are:
+    </p>
     <ul class="deck">
       {#each deck as c}
         <li>

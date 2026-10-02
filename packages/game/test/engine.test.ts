@@ -1,5 +1,15 @@
 import { describe, expect, test } from "bun:test";
-import { allCards, applyAction, fullDeck, newGame, SYSTEM, viewFor } from "../src/index.ts";
+import {
+  allCards,
+  applyAction,
+  deckCounts,
+  deckOf,
+  deckSizeFor,
+  fullDeck,
+  newGame,
+  SYSTEM,
+  viewFor,
+} from "../src/index.ts";
 import { act, type Cell, hidden, playing, rejects } from "./helpers.ts";
 
 const sorted = (xs: number[]) => [...xs].sort((a, b) => a - b);
@@ -45,8 +55,39 @@ describe("deck and deal", () => {
       expect(g.every((c) => c !== null && !c.faceUp)).toBe(true);
     }
     expect(s.discardPile).toHaveLength(1);
-    expect(s.drawPile).toHaveLength(150 - 120 - 1);
-    expect(sorted(allCards(s))).toEqual(sorted(fullDeck()));
+    expect(s.drawPile).toHaveLength(240 - 120 - 1);
+    expect(sorted(allCards(s))).toEqual(sorted(deckOf(240)));
+  });
+
+  test("the deck grows with the table, 24 cards per player", () => {
+    expect([2, 3, 6, 10].map(deckSizeFor)).toEqual([48, 72, 144, 240]);
+    for (let players = 2; players <= 10; players++) {
+      const s = newGame(players, players);
+      expect(s.deckSize).toBe(24 * players);
+      expect(allCards(s)).toHaveLength(24 * players);
+    }
+  });
+
+  test("every deck size keeps the boxed mix to within one card per value", () => {
+    for (let size = 30; size <= 300; size++) {
+      const counts = deckCounts(size);
+      expect([...counts.values()].reduce((a, b) => a + b, 0)).toBe(size);
+      const box = deckCounts(150);
+      for (const [value, count] of counts)
+        expect(Math.abs(count - ((box.get(value) ?? 0) * size) / 150)).toBeLessThan(1);
+      const mean = [...counts].reduce((sum, [v, c]) => sum + v * c, 0) / size;
+      expect(Math.abs(mean - 760 / 150)).toBeLessThan(0.2);
+    }
+    // Multiples of 30 match it exactly.
+    expect(sorted(deckOf(240))).toEqual(sorted([...fullDeck(), ...deckOf(90)]));
+  });
+
+  test("a game saved before decks scaled keeps its 150 cards", () => {
+    const s = newGame(4, 3);
+    delete s.deckSize;
+    s.phase = "roundOver";
+    const next = act(s, SYSTEM, { type: "nextRound" }).state;
+    expect(allCards(next)).toHaveLength(150);
   });
 
   test("player counts outside 2 to 10 are refused", () => {
@@ -259,7 +300,7 @@ describe("round end and scoring", () => {
     s = act(s, SYSTEM, { type: "nextRound" }).state;
     expect(s.round).toBe(2);
     expect(s.phase).toBe("initialFlip");
-    expect(sorted(allCards(s))).toEqual(sorted(fullDeck()));
+    expect(sorted(allCards(s))).toEqual(sorted(deckOf(s.deckSize ?? 150)));
     for (const p of [1, 0]) {
       s = act(s, p, { type: "flip", index: 0 }).state;
       s = act(s, p, { type: "flip", index: 1 }).state;

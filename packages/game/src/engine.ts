@@ -16,20 +16,68 @@ import {
   SYSTEM,
 } from "./types.ts";
 
-/** The 150-card deck: 5 × −2, 10 × −1, 15 × 0, and 10 each of 1 to 12. */
-export function fullDeck(): number[] {
-  const deck: number[] = [];
-  const add = (value: number, count: number) => {
-    for (let i = 0; i < count; i++) deck.push(value);
-  };
-  add(-2, 5);
-  add(-1, 10);
-  add(0, 15);
-  for (let v = 1; v <= 12; v++) add(v, 10);
-  return deck;
+/** Copies of each value per 30 cards. The boxed 150-card deck is five of these. */
+const MIX: readonly (readonly [value: number, per30: number])[] = [
+  [-2, 1],
+  [-1, 2],
+  [0, 3],
+  ...Array.from({ length: 12 }, (_, i) => [i + 1, 2] as const),
+];
+const MIX_MEAN = MIX.reduce((sum, [v, w]) => sum + v * w, 0) / 30;
+
+/**
+ * How many of each value a deck of `size` cards holds: the boxed mix, scaled. Multiples of
+ * 30 match it exactly. Otherwise every value gets its exact share rounded down, and the few
+ * cards left over go to the values that lost the most in rounding, keeping the deck's average
+ * as close to the boxed one as possible.
+ */
+export function deckCounts(size: number): Map<number, number> {
+  if (!Number.isInteger(size) || size < 30) throw new Error("a deck has at least 30 cards");
+  const counts = new Map<number, number>();
+  const remainders = MIX.map(([value, w]) => {
+    const exact = (size * w) / 30;
+    counts.set(value, Math.floor(exact));
+    return { value, remainder: exact - Math.floor(exact) };
+  });
+  let total = [...counts.values()].reduce((a, b) => a + b, 0);
+  let sum = [...counts].reduce((acc, [v, c]) => acc + v * c, 0);
+  while (total < size) {
+    const most = Math.max(...remainders.map((r) => r.remainder));
+    const tied = remainders.filter((r) => r.remainder > most - 1e-9);
+    const best = tied.reduce((a, b) =>
+      Math.abs((sum + a.value) / (total + 1) - MIX_MEAN) <= Math.abs((sum + b.value) / (total + 1) - MIX_MEAN) ? a : b,
+    );
+    counts.set(best.value, (counts.get(best.value) ?? 0) + 1);
+    best.remainder = -1;
+    total += 1;
+    sum += best.value;
+  }
+  return counts;
 }
 
+/** A deck of `size` cards in value order. */
+export function deckOf(size: number): number[] {
+  return [...deckCounts(size)].flatMap(([value, count]) => Array.from({ length: count }, () => value));
+}
+
+/** The boxed deck: 5 × −2, 10 × −1, 15 × 0, and 10 each of 1 to 12. */
 export const DECK_SIZE = 150;
+
+export function fullDeck(): number[] {
+  return deckOf(DECK_SIZE);
+}
+
+/**
+ * Cards per player. The boxed 150 cards never run out with 2 to 5 players and run out early
+ * in every round with 9 or 10. At 24 per player, about half of all rounds reshuffle, in their
+ * last 10 to 15 percent, at every table size (`packages/game/scripts/deck-calibration.ts`).
+ */
+export const CARDS_PER_PLAYER = 24;
+
+/** The deck a table of `players` plays with: 48 cards for two, up to 240 for ten. */
+export function deckSizeFor(players: number): number {
+  return CARDS_PER_PLAYER * players;
+}
 
 export type Result = { ok: true; state: GameState; events: GameEvent[] } | { ok: false; error: string };
 
@@ -59,6 +107,7 @@ export function newGame(
   seed: number | readonly number[],
   playerCount: number,
   settings?: Partial<Settings>,
+  deckSize = deckSizeFor(playerCount),
 ): GameState {
   const key = typeof seed === "number" ? seedFromNumber(seed) : [...seed];
   if (key.length !== 8 || !key.every((w) => Number.isInteger(w) && w >= 0 && w < 2 ** 32))
@@ -72,6 +121,7 @@ export function newGame(
       showSums: settings?.showSums ?? DEFAULT_SHOW_SUMS,
     },
     playerCount,
+    deckSize,
     rng: { key, block: 0 },
     round: 0,
     turn: 0,
@@ -93,7 +143,7 @@ export function newGame(
 }
 
 function deal(state: GameState): void {
-  const [deck, rng] = shuffleDeck(fullDeck(), state.rng);
+  const [deck, rng] = shuffleDeck(deckOf(state.deckSize ?? DECK_SIZE), state.rng);
   state.rng = rng;
   state.round += 1;
   state.turn = 0;

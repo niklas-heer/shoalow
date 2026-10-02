@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import { fly } from "svelte/transition";
-  import { coachNote, coachTip } from "../lib/coach.ts";
+  import { coachNote, coachTip, PRACTICE_SEED } from "../lib/coach.ts";
   import { LocalTable } from "../lib/local.svelte.ts";
   import { motion } from "../lib/motion.ts";
   import { router } from "../lib/router.svelte.ts";
@@ -12,8 +12,6 @@
 
   let { onrules }: { onrules: () => void } = $props();
 
-  /** Seed 3 opens with a 0 on the discard pile and a pair of 0s in the player's grid. */
-  const SEED = 3;
   let table = $state<LocalTable | null>(null);
   onDestroy(() => table?.close());
 
@@ -29,7 +27,7 @@
   const tip = $derived(table?.room ? coachTip(table.room) : null);
 
   function start() {
-    table = new LocalTable(savedName() || "You", SEED);
+    table = new LocalTable(savedName() || "You", PRACTICE_SEED);
   }
 </script>
 

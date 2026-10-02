@@ -3,7 +3,7 @@ import {
   type Action,
   allCards,
   chooseAction,
-  DECK_SIZE,
+  deckOf,
   legalActions,
   MAX_PLAYERS,
   makeRandom,
@@ -136,7 +136,8 @@ function checkInvariants(room: Room, where: string): void {
     return;
   }
   if (g.playerCount !== s.seats.length) fail("player count differs from the seats");
-  if (allCards(g).length !== DECK_SIZE) fail(`${allCards(g).length} cards in play`);
+  if (allCards(g).length !== deckOf(g.deckSize ?? 150).length) fail(`${allCards(g).length} cards in play`);
+  if (g.deckSize !== 24 * s.seats.length) fail(`a deck of ${g.deckSize} for ${s.seats.length} players`);
   if (g.settings.showSums !== s.settings.showSums || g.settings.targetScore !== s.settings.targetScore)
     fail("the game's settings drifted from the table's");
 

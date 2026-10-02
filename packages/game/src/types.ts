@@ -43,6 +43,8 @@ import type { RngState } from "./rng.ts";
 export interface GameState {
   settings: Settings;
   playerCount: number;
+  /** Cards in this game's deck. Missing in games saved before decks scaled: 150. */
+  deckSize?: number;
   /** Secret: decides every shuffle. Never part of a view. */
   rng: RngState;
   round: number;
