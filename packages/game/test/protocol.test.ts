@@ -28,6 +28,8 @@ test("malformed or unknown client messages are rejected", () => {
     '{"t":"setBotSpeed","speed":"turbo"}',
     '{"t":"setShowSums","show":"no"}',
     '{"t":"setShowSums"}',
+    '{"t":"__proto__"}',
+    '{"__proto__":{"t":"start"}}',
   ]) {
     expect(parseClientMessage(bad)).toBeNull();
   }
@@ -40,4 +42,16 @@ test("names are trimmed, collapsed and limited to 20 characters", () => {
   expect(cleanName(42)).toBeNull();
   expect(cleanName("x".repeat(21))).toBeNull();
   expect(cleanName("🐙".repeat(20))).toBe("🐙".repeat(20));
+  expect(cleanName("x".repeat(10_000))).toBeNull();
+});
+
+test("names cannot hide, reverse or smear text on other players' screens", () => {
+  expect(cleanName("Ann\u202ea")).toBe("Anna");
+  expect(cleanName("Line\nbreak\ttab")).toBe("Line break tab");
+  expect(cleanName("\u200b\u200b\u200b")).toBeNull();
+  expect(cleanName("\u3164")).toBeNull();
+  expect(cleanName("\u0000")).toBeNull();
+  expect(cleanName(`e${"\u0301".repeat(60)}`)).toBe(`\u00e9${"\u0301".repeat(3)}`);
+  // Emoji sequences keep their joiners.
+  expect(cleanName("👩‍🚀 Ada")).toBe("👩‍🚀 Ada");
 });

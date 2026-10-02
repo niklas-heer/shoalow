@@ -1,14 +1,19 @@
 import { Database } from "bun:sqlite";
-import type { RoomSnapshot } from "./room.ts";
+import { isRoomSnapshot, type RoomSnapshot } from "./room.ts";
 
-/** SQLite persistence: one snapshot per room plus an append-only log of accepted messages. */
+/** Upper bound for the database file, well inside the 1 GB volume, so it can never fill the disk. */
+const DEFAULT_MAX_BYTES = 400 * 1024 * 1024;
+
+/** SQLite persistence: one snapshot per room plus a bounded log of accepted messages. */
 export class Store {
   private readonly db: Database;
 
-  constructor(path: string) {
+  constructor(path: string, maxBytes = DEFAULT_MAX_BYTES) {
     this.db = new Database(path, { create: true, strict: true });
     this.db.run("PRAGMA journal_mode = WAL");
     this.db.run("PRAGMA synchronous = NORMAL");
+    const pageSize = this.db.query<{ page_size: number }, []>("PRAGMA page_size").get()?.page_size ?? 4096;
+    this.db.run(`PRAGMA max_page_count = ${Math.max(1, Math.floor(maxBytes / pageSize))}`);
     this.db.run(`CREATE TABLE IF NOT EXISTS rooms (
       code TEXT PRIMARY KEY,
       snapshot TEXT NOT NULL,
@@ -24,28 +29,50 @@ export class Store {
     this.db.run("CREATE INDEX IF NOT EXISTS log_code ON log (code, id)");
   }
 
-  loadRooms(): RoomSnapshot[] {
-    return this.db
-      .query<{ snapshot: string }, []>("SELECT snapshot FROM rooms")
-      .all()
-      .map((r) => JSON.parse(r.snapshot) as RoomSnapshot);
+  /** Every stored room. Rows that cannot be read are reported, not loaded, and stay on disk. */
+  loadRooms(): { rooms: { snap: RoomSnapshot; updatedAt: number }[]; broken: string[] } {
+    const rooms: { snap: RoomSnapshot; updatedAt: number }[] = [];
+    const broken: string[] = [];
+    const rows = this.db
+      .query<{ code: string; snapshot: string; updated_at: number }, []>("SELECT code, snapshot, updated_at FROM rooms")
+      .all();
+    for (const row of rows) {
+      let snap: unknown;
+      try {
+        snap = JSON.parse(row.snapshot);
+      } catch {
+        snap = null;
+      }
+      if (isRoomSnapshot(snap) && snap.code === row.code) rooms.push({ snap, updatedAt: row.updated_at });
+      else broken.push(row.code);
+    }
+    return { rooms, broken };
   }
 
   /** Saves the room and, when given, the message that changed it, in one transaction. */
-  save(snap: RoomSnapshot, entry?: { seat: number; message: unknown }): void {
+  save(snap: RoomSnapshot, entry?: { seat: number; message: unknown }, text = JSON.stringify(snap)): void {
     const now = Date.now();
     this.db.transaction(() => {
       this.db
         .query(
           "INSERT INTO rooms (code, snapshot, updated_at) VALUES (?1, ?2, ?3) ON CONFLICT(code) DO UPDATE SET snapshot = ?2, updated_at = ?3",
         )
-        .run(snap.code, JSON.stringify(snap), now);
+        .run(snap.code, text, now);
       if (entry) {
         this.db
           .query("INSERT INTO log (code, seat, message, at) VALUES (?1, ?2, ?3, ?4)")
           .run(snap.code, entry.seat, JSON.stringify(entry.message), now);
       }
     })();
+  }
+
+  /** Keeps only the newest `keep` log entries of a room. */
+  trimLog(code: string, keep: number): void {
+    this.db
+      .query(
+        "DELETE FROM log WHERE code = ?1 AND id <= (SELECT id FROM log WHERE code = ?1 ORDER BY id DESC LIMIT 1 OFFSET ?2)",
+      )
+      .run(code, keep);
   }
 
   delete(code: string): void {

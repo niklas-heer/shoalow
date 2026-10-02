@@ -15,6 +15,7 @@ import {
   MIN_PLAYERS,
   MIN_TARGET_SCORE,
   newGame,
+  ROOM_CODE_PATTERN,
   type RoomView,
   type Settings,
   SYSTEM,
@@ -48,6 +49,32 @@ export type Outcome = { ok: true; events: GameEvent[]; removedTokens?: string[] 
 const BOT_NAMES = ["Kelp", "Coral", "Barnacle", "Pebble", "Nautilus", "Plankton", "Brine", "Sprat", "Minnow", "Urchin"];
 
 export const newToken = (): string => crypto.randomUUID();
+
+const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
+
+/**
+ * Whether a stored snapshot has the shape the server relies on. A row that fails this is
+ * skipped at startup rather than taking every other table down with it.
+ */
+export function isRoomSnapshot(v: unknown): v is RoomSnapshot {
+  if (!isRecord(v) || typeof v.code !== "string" || !ROOM_CODE_PATTERN.test(v.code)) return false;
+  if (!Array.isArray(v.seats) || v.seats.length === 0 || v.seats.length > MAX_PLAYERS) return false;
+  const seatsOk = v.seats.every(
+    (x) =>
+      isRecord(x) &&
+      typeof x.token === "string" &&
+      typeof x.name === "string" &&
+      (x.kind === "human" || x.kind === "bot") &&
+      typeof x.takenOver === "boolean",
+  );
+  if (!seatsOk) return false;
+  if (!Number.isInteger(v.host) || (v.host as number) < 0 || (v.host as number) >= v.seats.length) return false;
+  if (!isRecord(v.settings) || !Number.isInteger(v.settings.targetScore)) return false;
+  if (v.status === "lobby") return v.game === null;
+  if (v.status !== "playing" || !isRecord(v.game)) return false;
+  const g = v.game;
+  return g.playerCount === v.seats.length && Array.isArray(g.grids) && g.grids.length === v.seats.length;
+}
 
 /** Lobby and table rules for one room. Holds no sockets or timers. */
 export class Room {
@@ -130,11 +157,15 @@ export class Room {
     return !!s && (s.kind === "bot" || s.takenOver);
   }
 
-  /** Called when the owner of a human seat connects: they take their seat back. */
+  /**
+   * Called when the owner of a human seat connects: they take their seat back. If everyone was
+   * away when hosting last changed hands, the first person back becomes host.
+   */
   reclaim(seat: number): boolean {
     const s = this.snap.seats[seat];
     if (!s?.takenOver) return false;
     s.takenOver = false;
+    if (this.snap.seats[this.snap.host]?.takenOver) this.snap.host = seat;
     return true;
   }
 
@@ -176,20 +207,12 @@ export class Room {
           removed.level = "normal";
           removed.takenOver = false;
           removed.token = newToken();
-          if (isHost)
-            s.host = Math.max(
-              0,
-              s.seats.findIndex((x) => x.kind === "human"),
-            );
+          if (isHost) s.host = this.nextHost();
           return { ok: true, events: [], removedTokens: [token] };
         }
         s.seats.splice(seat, 1);
         if (seat < s.host) s.host -= 1;
-        else if (seat === s.host)
-          s.host = Math.max(
-            0,
-            s.seats.findIndex((x) => x.kind === "human"),
-          );
+        else if (seat === s.host) s.host = this.nextHost();
         return { ok: true, events: [], removedTokens: [removed.token] };
       }
       case "setTarget": {
@@ -240,6 +263,7 @@ export class Room {
       }
       case "takeover": {
         if (!isHost) return fail("only the host can hand a seat to a bot");
+        if (s.status !== "playing") return fail("a bot can only take over during a game");
         const target = s.seats[msg.seat];
         if (target?.kind !== "human") return fail("only a player's seat can be handed to a bot");
         if (msg.seat === s.host) return fail("the host keeps their own seat");
@@ -252,6 +276,18 @@ export class Room {
         return this.apply(seat, msg.action);
       }
     }
+  }
+
+  /** The person who takes over hosting: someone still playing their own seat if possible. */
+  private nextHost(): number {
+    const seats = this.snap.seats;
+    const present = seats.findIndex((x) => x.kind === "human" && !x.takenOver);
+    return present !== -1
+      ? present
+      : Math.max(
+          0,
+          seats.findIndex((x) => x.kind === "human"),
+        );
   }
 
   private startGame(): GameEvent[] {

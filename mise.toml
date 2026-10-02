@@ -35,9 +35,9 @@ description = "Everything CI runs"
 depends = ["lint", "typecheck", "test"]
 
 [tasks.sim]
-description = "Long deterministic simulation run (SIM_GAMES, SIM_SEED)"
-env = { SIM_GAMES = "5000" }
-run = "bun test packages/game/test/simulation.test.ts --timeout 600000"
+description = "Long deterministic simulations: bot games (SIM_*) and whole tables under hostile input (ROOM_SIM_*)"
+env = { SIM_GAMES = "5000", ROOM_SIM_RUNS = "400" }
+run = "bun test packages/game/test/simulation.test.ts apps/server/test/room-sim.test.ts --timeout 600000"
 
 [tasks.build]
 description = "Build the web client"

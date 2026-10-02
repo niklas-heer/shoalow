@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { Room } from "../src/room.ts";
+import { isRoomSnapshot, Room } from "../src/room.ts";
 
 function lobby() {
   const { room, token } = Room.create("ABCDE", "Anna");
@@ -159,4 +159,59 @@ test("snapshots saved before sums could be hidden load with sums shown", () => {
   const loaded = new Room(old);
   expect(loaded.snap.settings.showSums).toBe(true);
   expect(loaded.view(0, () => true).game?.boards[0]?.visibleSum).toBe(0);
+});
+
+test("when the host exits a game, hosting goes to someone still playing their own seat", () => {
+  const { room, cleo } = lobby();
+  room.handle(0, { t: "start" });
+  room.handle(0, { t: "takeover", seat: 1, bot: true });
+  room.handle(0, { t: "leave" });
+  expect(room.snap.host).toBe(room.seatOf(cleo));
+});
+
+test("if everyone is away when the host exits, the first person back becomes host", () => {
+  const { room, ben, cleo } = lobby();
+  room.handle(0, { t: "start" });
+  room.handle(0, { t: "takeover", seat: 1, bot: true });
+  room.handle(0, { t: "takeover", seat: 2, bot: true });
+  room.handle(0, { t: "leave" });
+  expect(room.snap.host).toBe(room.seatOf(ben));
+  room.reclaim(room.seatOf(cleo));
+  expect(room.snap.host).toBe(room.seatOf(cleo));
+  room.reclaim(room.seatOf(ben));
+  expect(room.snap.host).toBe(room.seatOf(cleo));
+});
+
+test("a bot only takes over a seat while a game is running", () => {
+  const { room } = lobby();
+  expect(room.handle(0, { t: "takeover", seat: 1, bot: true })).toEqual({
+    ok: false,
+    error: "a bot can only take over during a game",
+  });
+  expect(room.snap.seats[1]?.takenOver).toBe(false);
+});
+
+test("stored snapshots are checked before they are trusted", () => {
+  const { room } = lobby();
+  const good = JSON.parse(JSON.stringify(room.snap));
+  expect(isRoomSnapshot(good)).toBe(true);
+  for (const bad of [
+    null,
+    [],
+    "text",
+    { ...good, code: "../x" },
+    { ...good, seats: [] },
+    { ...good, seats: "x" },
+    { ...good, host: 7 },
+    { ...good, host: -1 },
+    { ...good, status: "playing" },
+    { ...good, status: "lobby", game: {} },
+    { ...good, settings: null },
+    { ...good, seats: [{ ...good.seats[0], kind: "alien" }] },
+  ])
+    expect(isRoomSnapshot(bad)).toBe(false);
+  room.handle(0, { t: "start" });
+  const playing = JSON.parse(JSON.stringify(room.snap));
+  expect(isRoomSnapshot(playing)).toBe(true);
+  expect(isRoomSnapshot({ ...playing, game: { ...playing.game, grids: [] } })).toBe(false);
 });

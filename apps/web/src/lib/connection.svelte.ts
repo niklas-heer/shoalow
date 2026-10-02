@@ -12,6 +12,8 @@ const PING_MS = 25_000;
 const HIDDEN_DISCONNECT_MS = 10 * 60_000;
 const MAX_BACKOFF_MS = 8_000;
 const WAKE_CHECK_MS = 4_000;
+/** The server closed this socket because the same seat opened a newer one, such as in another tab. */
+const REPLACED_CLOSE_CODE = 4001;
 
 /**
  * One live seat at a table. Reconnects on its own, sends a heartbeat, and lets go of
@@ -67,11 +69,16 @@ export class Connection implements TableLink {
     ws.addEventListener("open", () => {
       opened = true;
     });
-    ws.onclose = async () => {
+    ws.onclose = async (e) => {
       clearInterval(this.ping);
       if (this.ws !== ws) return;
       this.ws = null;
       if (this.closed || this.removed || this.status === "paused") return;
+      // Reconnecting would push out the newer tab in turn; wait until this one is used again.
+      if (e.code === REPLACED_CLOSE_CODE) {
+        this.status = "paused";
+        return;
+      }
       this.status = "reconnecting";
       if (!opened && (await this.seatIsGone())) {
         this.removed = true;

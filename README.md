@@ -91,7 +91,7 @@ mise run install    # bun install
 mise run dev        # game server on :3000 and Vite on :5173
 mise run check      # Biome, TypeScript, svelte-check, all tests
 mise run e2e        # Playwright: a full round in Chromium, the table on iPhone and iPad in WebKit
-mise run sim        # 5000 seeded bot games checking every invariant
+mise run sim        # 5000 seeded bot games, and 400 tables fed random and hostile messages
 mise run icons      # re-render the home-screen icons after changing the logo
 mise run ci         # the CI pipeline, locally in Dagger
 ```
@@ -107,8 +107,18 @@ The code is a Bun workspace:
 The engine is deterministic: a game is its seed plus its action log. `viewFor(state, seat)` strips
 every face-down value before anything leaves the server, so browsers never receive hidden cards. The
 simulation test plays thousands of seeded games and checks card conservation, view secrecy, score
-arithmetic, termination and exact replay after every move. A failure prints the command that
-replays exactly that game.
+arithmetic, termination and exact replay after every move. A second simulation runs whole tables:
+people join, leave and send legal, illegal and malformed messages, and the server restarts from its
+snapshots. Every table must keep its invariants and still finish its game. Either kind of failure
+prints the command that replays it.
+
+The server is public and needs no account, so it limits each address: how fast it can create, join
+and look up tables, how many connections it can hold, and how many messages each connection can
+send. It refuses cross-site requests, sends a strict Content Security Policy and caps its own disk
+use. When it holds 2,000 tables, the longest-idle table nobody is connected to makes room for a new
+one. `apps/server/test/hardening.test.ts` runs these attacks against a real server. The limits are in
+`apps/server/src/limits.ts`; [the decision record](decisions/2026-10-02_104749343_limit-abuse-per-client-and-keep-the-server-up-through-bad-in.md)
+explains them.
 
 ## Deploy
 

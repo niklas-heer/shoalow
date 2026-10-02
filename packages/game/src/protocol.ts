@@ -3,6 +3,10 @@ import type { Action, GameEvent, Settings } from "./types.ts";
 import type { GameView } from "./view.ts";
 
 export const MAX_NAME_LENGTH = 20;
+export const ROOM_CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+export const ROOM_CODE_LENGTH = 5;
+/** A table code as the server issues it: five letters and digits that are hard to mix up. */
+export const ROOM_CODE_PATTERN = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{5}$/;
 export const MIN_TARGET_SCORE = 10;
 export const MAX_TARGET_SCORE = 500;
 
@@ -61,11 +65,21 @@ export interface CreateRoomResponse {
 
 export type JoinRoomResponse = CreateRoomResponse;
 
-/** Trims and validates a display name; returns null when unusable. */
+/**
+ * Trims and validates a display name; returns null when unusable. Names appear on everyone's
+ * screen, so invisible and direction-changing characters are dropped and long runs of
+ * combining marks are cut short. The zero-width joiner stays, since emoji sequences need it.
+ */
 export function cleanName(raw: unknown): string | null {
-  if (typeof raw !== "string") return null;
-  const name = raw.replace(/\s+/g, " ").trim();
-  if (name.length === 0 || [...name].length > MAX_NAME_LENGTH) return null;
+  if (typeof raw !== "string" || raw.length > 200) return null;
+  const name = raw
+    .normalize("NFC")
+    .replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, " ")
+    .replace(/(?!\u200d)[\p{Cf}\p{Co}\p{Cn}\u115f\u1160\u3164\uffa0\u2800]/gu, "")
+    .replace(/(\p{M}{3})\p{M}+/gu, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!/[\p{L}\p{N}\p{S}\p{P}]/u.test(name) || [...name].length > MAX_NAME_LENGTH) return null;
   return name;
 }
 

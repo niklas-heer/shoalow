@@ -24,8 +24,15 @@ function tempDir(): string {
   return dir;
 }
 
+/** Autoplaying test clients move far faster than people, so they get a higher message allowance. */
 function start(dataDir: string, port = 0): App {
-  const app = createServer({ port, hostname: "127.0.0.1", dataDir, botDelayMs: 0 });
+  const app = createServer({
+    port,
+    hostname: "127.0.0.1",
+    dataDir,
+    botDelayMs: 0,
+    limits: { messages: { burst: 10_000, perSecond: 10_000 } },
+  });
   let stopped = false;
   const stop = app.stop;
   app.stop = () => {
